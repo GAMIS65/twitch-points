@@ -11,6 +11,7 @@ import {
 import { Header } from "./components/dashboard/header";
 
 export default function SignInPage() {
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
@@ -55,7 +56,7 @@ export default function SignInPage() {
             </CardContent>
 
             <CardFooter className="flex flex-col gap-4">
-              <Link to="http://localhost:5123/auth/twitch">
+              <Link to={BACKEND_URL + "/auth/twitch"}>
                 <Button
                   className="w-full bg-purple-600 hover:bg-purple-700"
                   size="lg"
