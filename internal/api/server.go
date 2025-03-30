@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/gamis65/twitch-points/internal/db"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -17,9 +18,10 @@ type Server struct {
 	frontendURL  string
 	sessionStore *sessions.CookieStore
 	oauthConfig  *oauth2.Config
+	db           *db.DBStore
 }
 
-func NewServer(host, frontendURL, backendDomainName, clientID, clientSecret string, sessionStore *sessions.CookieStore) *Server {
+func NewServer(host, frontendURL, backendDomainName, clientID, clientSecret string, sessionStore *sessions.CookieStore, dbStore *db.DBStore) *Server {
 	return &Server{
 		host:         host,
 		frontendURL:  frontendURL,
@@ -31,6 +33,7 @@ func NewServer(host, frontendURL, backendDomainName, clientID, clientSecret stri
 			Scopes:       []string{"channel:read:redemptions", "channel:manage:redemptions"},
 			Endpoint:     twitch.Endpoint,
 		},
+		db: dbStore,
 	}
 }
 

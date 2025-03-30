@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/gamis65/twitch-points/internal/api"
+	"github.com/gamis65/twitch-points/internal/db"
 	"github.com/gamis65/twitch-points/internal/util"
 	"github.com/gorilla/sessions"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -25,10 +28,25 @@ func main() {
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	sessionKey := os.Getenv("SESSION_KEY")
 	backendDomainName := os.Getenv("BACKEND_DOMAIN_NAME")
+	dbURL := os.Getenv("DB_URL")
 
-	store := sessions.NewCookieStore([]byte(sessionKey))
+	ctx := context.Background()
+	conn, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		slog.Error("Error connecting to the database", "error", err)
+		os.Exit(1)
+	}
+	defer conn.Close()
+
+	dbStore := db.NewStore(conn)
+	if dbStore == nil {
+		slog.Info("db url", "url", dbURL)
+		log.Fatal("dbStore is nil")
+	}
+
+	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
 	if util.IsDev() {
-		store.Options = &sessions.Options{
+		sessionStore.Options = &sessions.Options{
 			Path:     "/",
 			Domain:   "localhost",
 			HttpOnly: true,
@@ -36,12 +54,12 @@ func main() {
 			SameSite: http.SameSiteLaxMode,
 		}
 	} else {
-		store.Options = &sessions.Options{
+		sessionStore.Options = &sessions.Options{
 			Path:     "/",
 			Domain:   "." + frontendURL,
 			HttpOnly: true,
 			Secure:   true,
-			SameSite: http.SameSiteStrictMode,
+			SameSite: http.SameSiteNoneMode,
 		}
 	}
 
@@ -51,7 +69,8 @@ func main() {
 		backendDomainName,
 		clientID,
 		clientSecret,
-		store,
+		sessionStore,
+		dbStore,
 	)
 
 	slog.Info("Server listening", "host", host)

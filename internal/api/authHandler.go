@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gamis65/twitch-points/internal/db"
 	"github.com/gamis65/twitch-points/internal/util"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/oauth2"
 )
 
@@ -66,7 +68,7 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if util.IsDev() {
+	if !util.IsDev() {
 		// Sign in should be only available to channels with channel points
 		if userData.BroadcasterType == "" {
 			slog.Info("A user who is not an affiliate or a partner tried to sign in", "username", userData.Login)
@@ -80,6 +82,42 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	session.Values["expiry"] = token.Expiry.Unix()
 	session.Values["user_id"] = userData.ID
 	session.Options.MaxAge = int(token.Expiry.Unix() - time.Now().Unix())
+
+	existingUser, err := s.db.GetStreamerByID(r.Context(), userData.ID)
+	if err != nil {
+		slog.Error("Error getting user from the database", "error", err, "id", userData.ID)
+	}
+
+	if existingUser == (db.Streamer{}) {
+		_, err := s.db.CreateStreamer(r.Context(), db.CreateStreamerParams{
+			TwitchID:        userData.ID,
+			Username:        userData.Login,
+			AccessToken:     pgtype.Text{String: token.AccessToken, Valid: true},
+			RefreshToken:    pgtype.Text{String: token.RefreshToken, Valid: true},
+			ProfileImageUrl: pgtype.Text{String: userData.ProfileImageURL, Valid: true},
+			Verified:        pgtype.Bool{Bool: false, Valid: true},
+		})
+
+		if err != nil {
+			slog.Error("Error creating a new user", "error", err, "id", userData.ID, "username", userData.Login)
+			http.Redirect(w, r, s.frontendURL+"/auth/twitch/login", http.StatusTemporaryRedirect)
+			return
+		}
+
+		slog.Info("Created a new user", "id", userData.ID, "username", userData.Login)
+	} else {
+		_, err := s.db.UpdateStreamerTokens(r.Context(), db.UpdateStreamerTokensParams{
+			TwitchID:     userData.ID,
+			AccessToken:  pgtype.Text{String: token.AccessToken, Valid: true},
+			RefreshToken: pgtype.Text{String: token.RefreshToken, Valid: true},
+		})
+
+		if err != nil {
+			slog.Error("Error updating user tokens", "error", err, "id", userData.ID, "username", userData.Login)
+		}
+
+		slog.Info("User logged in", "id", userData.ID, "username", userData.Login)
+	}
 
 	session.Save(r, w)
 
