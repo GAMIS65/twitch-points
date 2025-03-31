@@ -9,10 +9,14 @@ import (
 
 	"github.com/gamis65/twitch-points/internal/api"
 	"github.com/gamis65/twitch-points/internal/db"
+	"github.com/gamis65/twitch-points/internal/twitch"
 	"github.com/gamis65/twitch-points/internal/util"
 	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v5/pgxpool"
+	eventSubs "github.com/joeyak/go-twitch-eventsub"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
+	twitchOauth "golang.org/x/oauth2/twitch"
 )
 
 func main() {
@@ -29,6 +33,16 @@ func main() {
 	sessionKey := os.Getenv("SESSION_KEY")
 	backendDomainName := os.Getenv("BACKEND_DOMAIN_NAME")
 	dbURL := os.Getenv("DB_URL")
+	myAccessToken := os.Getenv("MY_ACCESS_TOKEN")
+	myChannelID := os.Getenv("MY_CHANNEL_ID")
+
+	oauthConfig := &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  backendDomainName + "/auth/twitch/callback",
+		Scopes:       []string{"channel:read:redemptions", "channel:manage:redemptions"},
+		Endpoint:     twitchOauth.Endpoint,
+	}
 
 	ctx := context.Background()
 	conn, err := pgxpool.New(ctx, dbURL)
@@ -43,6 +57,24 @@ func main() {
 		slog.Info("db url", "url", dbURL)
 		log.Fatal("dbStore is nil")
 	}
+
+	events := []eventSubs.EventSubscription{
+		eventSubs.SubStreamOnline,
+		eventSubs.SubStreamOffline,
+		eventSubs.SubChannelChannelPointsCustomRewardUpdate,
+		eventSubs.SubChannelChannelPointsCustomRewardRedemptionAdd,
+		eventSubs.SubChannelUpdate,
+	}
+
+	twitchEventSubClient := twitch.NewTwitchClient(clientID, clientSecret, dbStore, events, myChannelID, myAccessToken)
+	twitchEventSubClient.Initialize()
+
+	go func() {
+		err := twitchEventSubClient.Connect()
+		if err != nil {
+			slog.Error("Failed to connect to twitch", "error", err)
+		}
+	}()
 
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
 	if util.IsDev() {
@@ -67,10 +99,10 @@ func main() {
 		host,
 		frontendURL,
 		backendDomainName,
-		clientID,
-		clientSecret,
+		oauthConfig,
 		sessionStore,
 		dbStore,
+		twitchEventSubClient,
 	)
 
 	slog.Info("Server listening", "host", host)

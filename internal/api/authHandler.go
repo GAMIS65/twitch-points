@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gamis65/twitch-points/internal/db"
 	"github.com/gamis65/twitch-points/internal/util"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/oauth2"
 )
@@ -85,11 +87,15 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	existingUser, err := s.db.GetStreamerByID(r.Context(), userData.ID)
 	if err != nil {
-		slog.Error("Error getting user from the database", "error", err, "id", userData.ID)
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("Database error when fetching user", "error", err, "id", userData.ID)
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	if existingUser == (db.Streamer{}) {
-		_, err := s.db.CreateStreamer(r.Context(), db.CreateStreamerParams{
+		newUser, err := s.db.CreateStreamer(r.Context(), db.CreateStreamerParams{
 			TwitchID:        userData.ID,
 			Username:        userData.Login,
 			AccessToken:     pgtype.Text{String: token.AccessToken, Valid: true},
@@ -103,6 +109,8 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, s.frontendURL+"/auth/twitch/login", http.StatusTemporaryRedirect)
 			return
 		}
+
+		s.twitchEventSub.SubscribeToEvents([]db.Streamer{newUser})
 
 		slog.Info("Created a new user", "id", userData.ID, "username", userData.Login)
 	} else {

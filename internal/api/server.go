@@ -10,30 +10,27 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/twitch"
+
+	eventSub "github.com/gamis65/twitch-points/internal/twitch"
 )
 
 type Server struct {
-	host         string
-	frontendURL  string
-	sessionStore *sessions.CookieStore
-	oauthConfig  *oauth2.Config
-	db           *db.DBStore
+	host           string
+	frontendURL    string
+	sessionStore   *sessions.CookieStore
+	oauthConfig    *oauth2.Config
+	db             *db.DBStore
+	twitchEventSub *eventSub.TwitchEventSubClient
 }
 
-func NewServer(host, frontendURL, backendDomainName, clientID, clientSecret string, sessionStore *sessions.CookieStore, dbStore *db.DBStore) *Server {
+func NewServer(host string, frontendURL string, backendDomainName string, config *oauth2.Config, sessionStore *sessions.CookieStore, dbStore *db.DBStore, twitchEventSub *eventSub.TwitchEventSubClient) *Server {
 	return &Server{
-		host:         host,
-		frontendURL:  frontendURL,
-		sessionStore: sessionStore,
-		oauthConfig: &oauth2.Config{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			RedirectURL:  backendDomainName + "/auth/twitch/callback",
-			Scopes:       []string{"channel:read:redemptions", "channel:manage:redemptions"},
-			Endpoint:     twitch.Endpoint,
-		},
-		db: dbStore,
+		host:           host,
+		frontendURL:    frontendURL,
+		sessionStore:   sessionStore,
+		oauthConfig:    config,
+		db:             dbStore,
+		twitchEventSub: twitchEventSub,
 	}
 }
 
@@ -51,6 +48,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	r.Get("/auth/twitch", s.beginAuthHandler)
 	r.Get("/auth/twitch/callback", s.callbackHandler)
 	r.Get("/logout/twitch", s.logoutHandler)
+	r.With(s.authMiddleware).Post("/add-reward", s.addRewardHandler)
 
 	return r
 }

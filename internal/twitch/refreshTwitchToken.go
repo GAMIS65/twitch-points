@@ -1,30 +1,54 @@
 package twitch
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
 	"fmt"
-
-	"golang.org/x/oauth2"
+	"io"
+	"net/http"
+	"net/url"
 )
 
-func GetRefreshTwitchToken(clientID, clientSecret, refreshToken string) (*oauth2.Token, error) {
-	twitchOAuth2Endpoint := oauth2.Endpoint{
-		AuthURL:  "https://id.twitch.tv/oauth2/authorize",
-		TokenURL: "https://id.twitch.tv/oauth2/token",
-	}
+type TwitchTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int    `json:"expires_in"`
+	TokenType    string `json:"token_type"`
+}
 
-	conf := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		Endpoint:     twitchOAuth2Endpoint,
-	}
+func GetRefreshTwitchToken(refreshToken, clientID, clientSecret string) (TwitchTokenResponse, error) {
+	endpoint := "https://id.twitch.tv/oauth2/token"
 
-	tokenSource := conf.TokenSource(context.Background(), &oauth2.Token{RefreshToken: refreshToken})
+	data := url.Values{}
+	data.Set("grant_type", "refresh_token")
+	data.Set("refresh_token", refreshToken)
+	data.Set("client_id", clientID)
+	data.Set("client_secret", clientSecret)
 
-	newToken, err := tokenSource.Token()
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		return nil, fmt.Errorf("unable to refresh token: %v", err)
+		return TwitchTokenResponse{}, fmt.Errorf("error creating request: %w", err)
 	}
 
-	return newToken, nil
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return TwitchTokenResponse{}, fmt.Errorf("error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return TwitchTokenResponse{}, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	var tokenResponse TwitchTokenResponse
+	err = json.Unmarshal(body, &tokenResponse)
+	if err != nil {
+		return TwitchTokenResponse{}, fmt.Errorf("error unmarshalling JSON: %w", err)
+	}
+
+	return tokenResponse, nil
 }
