@@ -148,14 +148,38 @@ func (tc *TwitchEventSubClient) handleReconnect(message twitch.ReconnectMessage)
 }
 
 func (tc *TwitchEventSubClient) handleRewardRedemption(event twitch.EventChannelChannelPointsCustomRewardRedemptionAdd) {
-	// TODO: Check for duplicates
-	// TODO: Check for the reward ID in the database
+	reward, err := tc.db.GetRewardsByStreamer(context.Background(), pgtype.Text{String: event.BroadcasterUserId, Valid: true})
+	if err != nil {
+		// TODO: Refactor logging
+		slog.Error("Error getting a reward for a streamer from db", "streamerId", event.BroadcasterUserId, "streamerUsername", event.BroadcasterUserName, "reward", event.Reward.Title, "viewerId", event.UserID, "viewerUsername", event.UserLogin)
+		util.SendWebHook("Error getting a reward for a streamer from db " + event.BroadcasterUserLogin)
+		return
+	}
+
+	// TODO: Check if the reward has the right cost
+	if event.Reward.ID != reward[0].RewardID {
+		return
+	}
+
+	_, err = tc.db.CreateRedemption(context.Background(), db.CreateRedemptionParams{
+		MessageID:  event.ID,
+		RewardID:   pgtype.Text{String: reward[0].RewardID, Valid: true},
+		ViewerID:   pgtype.Text{String: event.UserID, Valid: true},
+		StreamerID: pgtype.Text{String: event.BroadcasterUserId, Valid: true},
+	})
+
+	if err != nil {
+		slog.Error("Error adding a redemption to db", "streamerId", event.BroadcasterUserId, "viewverId", event.UserID)
+		util.SendWebHook("Error adding a redemption to db " + event.BroadcasterUserLogin)
+		return
+	}
+
 	slog.Info("User redeemed a reward", "userId", event.UserID, "username", event.User.UserLogin, "channel", event.BroadcasterUserLogin)
 	util.SendWebHook(event.UserLogin + " redeemed an entry in " + event.BroadcasterUserLogin)
 }
 
 func (tc *TwitchEventSubClient) handleChannelUpdate(event twitch.EventChannelUpdate) {
-	slog.Info("Channel updated", "channel", event.BroadcasterUserLogin)
+	slog.Info("Channel updated", "channel", event.BroadcasterUserLogin, "event", event.Title)
 }
 
 func (tc *TwitchEventSubClient) handleRewardUpdate(event twitch.EventChannelChannelPointsCustomRewardUpdate) {

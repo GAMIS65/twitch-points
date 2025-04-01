@@ -87,7 +87,8 @@ func main() {
 		}
 	} else {
 		sessionStore.Options = &sessions.Options{
-			Path:     "/",
+			Path: "/",
+			// TODO: change this
 			Domain:   "." + frontendURL,
 			HttpOnly: true,
 			Secure:   true,
