@@ -50,6 +50,9 @@ func (s *Server) SetupRoutes() http.Handler {
 	r.Get("/logout/twitch", s.logoutHandler)
 	r.With(s.authMiddleware).Post("/add-reward", s.addRewardHandler)
 
+	r.Route("/giveaway", func(r chi.Router) {
+		r.Get("/streamers", s.GetStreamers)
+	})
 	return r
 }
 
