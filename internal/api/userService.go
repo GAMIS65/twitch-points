@@ -46,20 +46,8 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	session, _ := s.sessionStore.Get(r, "twitch-oauth-session")
-	user_id, ok := session.Values["user_id"].(string)
-	access_token, accessTokenOk := session.Values["access_token"].(string)
-
-	if !ok {
-		slog.Error("Error getting user id from session when adding a reward")
-		http.Error(w, "Error getting streamers rewards from the database", http.StatusUnauthorized)
-		return
-	}
-
-	if !accessTokenOk {
-		slog.Error("Error getting access token from session when adding a reward")
-		http.Error(w, "Error getting streamers rewards from the database", http.StatusUnauthorized)
-		return
-	}
+	user_id, _ := session.Values["user_id"].(string)
+	access_token, _ := session.Values["access_token"].(string)
 
 	client.SetUserAccessToken(access_token)
 

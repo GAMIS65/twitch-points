@@ -184,8 +184,10 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 
 		accessToken, ok := session.Values["access_token"].(string)
 		expiry, expiryOk := session.Values["expiry"].(int64)
+		userId, userIdOk := session.Values["user_id"].(string)
 
-		if !ok || !expiryOk || accessToken == "" {
+		if !ok || !expiryOk || userIdOk || accessToken == "" {
+			slog.Error("Failed to authenticate user", "accessTokenOk", ok, "expiry", expiry, "userId", userId, "userIdOk", userIdOk)
 			http.Redirect(w, r, s.frontendURL, http.StatusSeeOther)
 			return
 		}
