@@ -2,10 +2,13 @@ package twitch
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/gamis65/twitch-points/internal/db"
 	"github.com/gamis65/twitch-points/internal/util"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/joeyak/go-twitch-eventsub"
 )
@@ -155,7 +158,7 @@ func (tc *TwitchEventSubClient) handleRewardRedemption(event twitch.EventChannel
 	reward, err := tc.db.GetRewardsByStreamer(context.Background(), pgtype.Text{String: event.BroadcasterUserId, Valid: true})
 	if err != nil {
 		// TODO: Refactor logging
-		slog.Error("Error getting a reward for a streamer from db", "streamerId", event.BroadcasterUserId, "streamerUsername", event.BroadcasterUserName, "reward", event.Reward.Title, "viewerId", event.UserID, "viewerUsername", event.UserLogin)
+		slog.Error("Error getting a reward for a streamer from db", "error", err, "streamerId", event.BroadcasterUserId, "streamerUsername", event.BroadcasterUserName, "reward", event.Reward.Title, "viewerId", event.UserID, "viewerUsername", event.UserLogin)
 		util.SendWebHook("Error getting a reward for a streamer from db " + event.BroadcasterUserLogin)
 		return
 	}
@@ -163,6 +166,28 @@ func (tc *TwitchEventSubClient) handleRewardRedemption(event twitch.EventChannel
 	// TODO: Check if the reward has the right cost
 	if event.Reward.ID != reward[0].RewardID {
 		return
+	}
+
+	viewer, err := tc.db.GetViewerByID(context.Background(), event.UserID)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("Error getting viewer by id", "error", err, "viewerId", event.UserID, "viewerUsername", event.UserLogin, "streamerId", event.BroadcasterUserId, "streamerUsername", event.BroadcasterUserLogin)
+			return
+		}
+	}
+
+	emptyViewer := db.Viewer{}
+	if viewer == emptyViewer {
+		_, err = tc.db.CreateViewer(context.Background(), db.CreateViewerParams{
+			TwitchID:     event.UserID,
+			Username:     event.UserLogin,
+			RegisteredIn: pgtype.Text{String: event.BroadcasterUserId, Valid: true},
+		})
+
+		if err != nil {
+			slog.Error("Error creating a new viewer", "error", err, "viewerId", event.UserID, "viewerUsername", event.UserLogin, "streamerId", event.BroadcasterUserId, "streamerUsername", event.BroadcasterUserLogin)
+			return
+		}
 	}
 
 	_, err = tc.db.CreateRedemption(context.Background(), db.CreateRedemptionParams{
@@ -173,7 +198,7 @@ func (tc *TwitchEventSubClient) handleRewardRedemption(event twitch.EventChannel
 	})
 
 	if err != nil {
-		slog.Error("Error adding a redemption to db", "streamerId", event.BroadcasterUserId, "viewverId", event.UserID)
+		slog.Error("Error adding a redemption to db", "error", err, "streamerId", event.BroadcasterUserId, "viewverId", event.UserID)
 		util.SendWebHook("Error adding a redemption to db " + event.BroadcasterUserLogin)
 		return
 	}
