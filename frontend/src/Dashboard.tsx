@@ -3,10 +3,14 @@ import { StatsCards } from "./components/dashboard/stats-card";
 import { StreamersList } from "./components/dashboard/streamer-list";
 import { LeaderboardTable } from "./components/dashboard/leaderboard";
 import { RecentEntries } from "./components/dashboard/recent-entries";
-import { useTotalParticipantsStatic } from "./hooks/use-api";
+import {
+  useTotalEntriesStatic,
+  useTotalParticipantsStatic,
+} from "./hooks/use-api";
 
 export default function Dashboard() {
   const { data: participantsCount } = useTotalParticipantsStatic();
+  const { data: entriesCount } = useTotalEntriesStatic();
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -17,6 +21,7 @@ export default function Dashboard() {
             <div className="flex justify-end"></div>
             <StatsCards
               totalParticipants={participantsCount?.total_participants}
+              totalEntries={entriesCount?.total_entries}
             />
             <div className="grid gap-4 md:grid-cols-2">
               <StreamersList />

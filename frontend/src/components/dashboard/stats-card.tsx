@@ -3,9 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 type StatsCardsProps = {
   totalParticipants: number | undefined;
+  totalEntries: number | undefined;
 };
 
-export function StatsCards({ totalParticipants }: StatsCardsProps) {
+export function StatsCards({
+  totalParticipants,
+  totalEntries,
+}: StatsCardsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
@@ -27,7 +31,9 @@ export function StatsCards({ totalParticipants }: StatsCardsProps) {
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">1,234</div>
+          <div className="text-2xl font-bold">
+            {totalEntries ? totalEntries : "0"}
+          </div>
         </CardContent>
       </Card>
     </div>

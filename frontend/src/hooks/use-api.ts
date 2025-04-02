@@ -36,6 +36,12 @@ export function useTotalParticipantsStatic(options?: SWRConfiguration) {
   }>("/giveaway/participants-count", options);
 }
 
+export function useTotalEntriesStatic(options?: SWRConfiguration) {
+  return useApiStatic<{
+    total_entries: number;
+  }>("/giveaway/entries-count", options);
+}
+
 export function useRecentEntries(options?: SWRConfiguration) {
   return useApi<
     {
