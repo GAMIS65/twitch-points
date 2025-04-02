@@ -66,7 +66,7 @@ func (tc *TwitchEventSubClient) handleWelcome(message twitch.WelcomeMessage) {
 		tc.subscribeToMyChannel()
 	}
 
-	for _, streamer := range streamers {
+	for i, streamer := range streamers {
 		newToken, err := GetRefreshTwitchToken(streamer.RefreshToken.String, tc.clientId, tc.clientSecret)
 		if err != nil {
 			slog.Error("Error refreshing token", "error", err)
@@ -81,6 +81,10 @@ func (tc *TwitchEventSubClient) handleWelcome(message twitch.WelcomeMessage) {
 		if err != nil {
 			slog.Error("Failed to refresh token", "error", err, "id", streamer.TwitchID, "username", streamer.Username)
 		}
+
+		streamers[i].AccessToken.String = newToken.AccessToken
+		streamers[i].RefreshToken.String = newToken.RefreshToken
+
 		slog.Info("Refreshed streamer token", "id", streamer.TwitchID, "username", streamer.Username)
 	}
 
