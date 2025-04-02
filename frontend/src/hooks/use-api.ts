@@ -30,6 +30,12 @@ export function useStreamersStatic(options?: SWRConfiguration) {
   >("/giveaway/streamers", options);
 }
 
+export function useTotalParticipantsStatic(options?: SWRConfiguration) {
+  return useApiStatic<{
+    total_participants: number;
+  }>("/giveaway/participants-count", options);
+}
+
 export function useRecentEntries(options?: SWRConfiguration) {
   return useApi<
     {

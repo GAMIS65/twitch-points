@@ -47,3 +47,24 @@ func (s *Server) GetRecentEntriesHandler(w http.ResponseWriter, r *http.Request)
 
 	util.SendJSON(w, recentEntries)
 }
+
+func (s *Server) GetTotalParticipantsHandler(w http.ResponseWriter, r *http.Request) {
+	type TotalParticipantsResponse struct {
+		TotalParticipants int `json:"total_participants"`
+	}
+
+	totalParticipants, err := s.db.GetTotalParticipantsCount(r.Context())
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("Error getting total participants count", "error", err)
+			http.Error(w, "Error getting total participants count", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	response := TotalParticipantsResponse{
+		TotalParticipants: int(totalParticipants),
+	}
+
+	util.SendJSON(w, response)
+}

@@ -53,6 +53,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	r.Route("/giveaway", func(r chi.Router) {
 		r.Get("/streamers", s.GetStreamersHandler)
 		r.Get("/recent-entries", s.GetRecentEntriesHandler)
+		r.Get("/participants-count", s.GetTotalParticipantsHandler)
 	})
 	return r
 }

@@ -79,6 +79,6 @@ SELECT COUNT(*) AS total_redemptions
 FROM redemptions;
 
 -- name: GetTotalParticipantsCount :one
-SELECT COUNT(DISTINCT viewer_id) AS total_participants
-FROM redemptions;
+SELECT COUNT(*) AS total_participants
+FROM viewers;
 

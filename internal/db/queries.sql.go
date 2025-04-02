@@ -290,8 +290,8 @@ func (q *Queries) GetStreamerByID(ctx context.Context, twitchID string) (Streame
 }
 
 const getTotalParticipantsCount = `-- name: GetTotalParticipantsCount :one
-SELECT COUNT(DISTINCT viewer_id) AS total_participants
-FROM redemptions
+SELECT COUNT(*) AS total_participants
+FROM viewers
 `
 
 func (q *Queries) GetTotalParticipantsCount(ctx context.Context) (int64, error) {
