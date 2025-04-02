@@ -10,14 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *Server) GetStreamers(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetStreamersHandler(w http.ResponseWriter, r *http.Request) {
 	streamers, err := s.db.GetAllStreamers(r.Context())
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			emptyStreamers := make([]db.Streamer, 0)
-			util.SendJSON(w, emptyStreamers)
-			return
-		} else {
+		if !errors.Is(err, pgx.ErrNoRows) {
 			slog.Error("Error getting streamers", "error", err)
 			http.Error(w, "Error getting streamers", http.StatusInternalServerError)
 			return
@@ -31,4 +27,23 @@ func (s *Server) GetStreamers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.SendJSON(w, streamers)
+}
+
+func (s *Server) GetRecentEntriesHandler(w http.ResponseWriter, r *http.Request) {
+	recentEntries, err := s.db.GetRecentRedemptionsWithUsernames(r.Context(), 10)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("Error getting recent redemptions", "error", err)
+			http.Error(w, "Error getting recent redemptions", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if recentEntries == nil {
+		emptyEntries := make([]db.Streamer, 0)
+		util.SendJSON(w, emptyEntries)
+		return
+	}
+
+	util.SendJSON(w, recentEntries)
 }

@@ -29,3 +29,14 @@ export function useStreamersStatic(options?: SWRConfiguration) {
     }[]
   >("/giveaway/streamers", options);
 }
+
+export function useRecentEntries(options?: SWRConfiguration) {
+  return useApi<
+    {
+      message_id: string;
+      redeemed_at: string;
+      streamer_username: string;
+      viewer_username: string;
+    }[]
+  >("/giveaway/recent-entries", options);
+}

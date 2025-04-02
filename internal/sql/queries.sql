@@ -61,18 +61,15 @@ ORDER BY
 -- name: GetRecentRedemptionsWithUsernames :many
 SELECT
     r.message_id,
-    r.reward_id,
-    r.streamer_id,
-    s.username AS streamer_username, -- Get streamer username from viewers table
+    s.username AS streamer_username, -- Get streamer username from streamers table
     v.username AS viewer_username,   -- Get viewer username from viewers table
-    r.viewer_id,
     r.redeemed_at
 FROM
     redemptions r
 JOIN
-    viewers s ON r.streamer_id = s.viewer_id -- Join to get streamer username
+    streamers s ON r.streamer_id = s.twitch_id
 JOIN
-    viewers v ON r.viewer_id = v.viewer_id   -- Join to get viewer username
+    viewers v ON r.viewer_id = v.twitch_id
 ORDER BY
     r.redeemed_at DESC
 LIMIT $1;

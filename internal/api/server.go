@@ -51,7 +51,8 @@ func (s *Server) SetupRoutes() http.Handler {
 	r.With(s.authMiddleware).Post("/add-reward", s.addRewardHandler)
 
 	r.Route("/giveaway", func(r chi.Router) {
-		r.Get("/streamers", s.GetStreamers)
+		r.Get("/streamers", s.GetStreamersHandler)
+		r.Get("/recent-entries", s.GetRecentEntriesHandler)
 	})
 	return r
 }

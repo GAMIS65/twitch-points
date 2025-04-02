@@ -199,18 +199,15 @@ func (q *Queries) GetAllStreamersWithTokens(ctx context.Context) ([]Streamer, er
 const getRecentRedemptionsWithUsernames = `-- name: GetRecentRedemptionsWithUsernames :many
 SELECT
     r.message_id,
-    r.reward_id,
-    r.streamer_id,
-    s.username AS streamer_username, -- Get streamer username from viewers table
+    s.username AS streamer_username, -- Get streamer username from streamers table
     v.username AS viewer_username,   -- Get viewer username from viewers table
-    r.viewer_id,
     r.redeemed_at
 FROM
     redemptions r
 JOIN
-    viewers s ON r.streamer_id = s.viewer_id -- Join to get streamer username
+    streamers s ON r.streamer_id = s.twitch_id
 JOIN
-    viewers v ON r.viewer_id = v.viewer_id   -- Join to get viewer username
+    viewers v ON r.viewer_id = v.twitch_id
 ORDER BY
     r.redeemed_at DESC
 LIMIT $1
@@ -218,11 +215,8 @@ LIMIT $1
 
 type GetRecentRedemptionsWithUsernamesRow struct {
 	MessageID        string             `json:"message_id"`
-	RewardID         pgtype.Text        `json:"reward_id"`
-	StreamerID       pgtype.Text        `json:"streamer_id"`
 	StreamerUsername string             `json:"streamer_username"`
 	ViewerUsername   string             `json:"viewer_username"`
-	ViewerID         pgtype.Text        `json:"viewer_id"`
 	RedeemedAt       pgtype.Timestamptz `json:"redeemed_at"`
 }
 
@@ -237,11 +231,8 @@ func (q *Queries) GetRecentRedemptionsWithUsernames(ctx context.Context, limit i
 		var i GetRecentRedemptionsWithUsernamesRow
 		if err := rows.Scan(
 			&i.MessageID,
-			&i.RewardID,
-			&i.StreamerID,
 			&i.StreamerUsername,
 			&i.ViewerUsername,
-			&i.ViewerID,
 			&i.RedeemedAt,
 		); err != nil {
 			return nil, err
