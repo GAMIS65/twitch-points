@@ -55,6 +55,7 @@ func (s *Server) SetupRoutes() http.Handler {
 		r.Get("/recent-entries", s.GetRecentEntriesHandler)
 		r.Get("/participants-count", s.GetTotalParticipantsHandler)
 		r.Get("/entries-count", s.GetTotalEntriesHandler)
+		r.Get("/leaderboard", s.GetLeaderboardHandler)
 	})
 	return r
 }

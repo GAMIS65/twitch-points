@@ -333,12 +333,11 @@ func (q *Queries) GetViewerByID(ctx context.Context, twitchID string) (Viewer, e
 const getViewerLeaderboard = `-- name: GetViewerLeaderboard :many
 SELECT
     v.username, -- Retrieve the username from the viewers table
-    r.viewer_id,
     COUNT(r.*) AS total_redemptions
 FROM
     redemptions r
 JOIN
-    viewers v ON r.viewer_id = u.twitch_id -- Join the tables based on viewer_id
+    viewers v ON r.viewer_id = v.twitch_id -- Join the tables based on viewer_id
 GROUP BY
     r.viewer_id, v.username -- Group by both viewer_id and username
 ORDER BY
@@ -346,9 +345,8 @@ ORDER BY
 `
 
 type GetViewerLeaderboardRow struct {
-	Username         string      `json:"username"`
-	ViewerID         pgtype.Text `json:"viewer_id"`
-	TotalRedemptions int64       `json:"total_redemptions"`
+	Username         string `json:"username"`
+	TotalRedemptions int64  `json:"total_redemptions"`
 }
 
 func (q *Queries) GetViewerLeaderboard(ctx context.Context) ([]GetViewerLeaderboardRow, error) {
@@ -360,7 +358,7 @@ func (q *Queries) GetViewerLeaderboard(ctx context.Context) ([]GetViewerLeaderbo
 	var items []GetViewerLeaderboardRow
 	for rows.Next() {
 		var i GetViewerLeaderboardRow
-		if err := rows.Scan(&i.Username, &i.ViewerID, &i.TotalRedemptions); err != nil {
+		if err := rows.Scan(&i.Username, &i.TotalRedemptions); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

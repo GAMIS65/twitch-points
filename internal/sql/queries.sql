@@ -47,12 +47,11 @@ RETURNING *;
 -- name: GetViewerLeaderboard :many
 SELECT
     v.username, -- Retrieve the username from the viewers table
-    r.viewer_id,
     COUNT(r.*) AS total_redemptions
 FROM
     redemptions r
 JOIN
-    viewers v ON r.viewer_id = u.twitch_id -- Join the tables based on viewer_id
+    viewers v ON r.viewer_id = v.twitch_id -- Join the tables based on viewer_id
 GROUP BY
     r.viewer_id, v.username -- Group by both viewer_id and username
 ORDER BY

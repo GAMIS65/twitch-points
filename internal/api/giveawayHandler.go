@@ -77,8 +77,8 @@ func (s *Server) GetTotalEntriesHandler(w http.ResponseWriter, r *http.Request) 
 	totalEntries, err := s.db.GetTotalRedemptionsCount(r.Context())
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			slog.Error("Error getting total participants count", "error", err)
-			http.Error(w, "Error getting total participants count", http.StatusInternalServerError)
+			slog.Error("Error getting total entries count", "error", err)
+			http.Error(w, "Error getting total entries count", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -88,4 +88,23 @@ func (s *Server) GetTotalEntriesHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	util.SendJSON(w, response)
+}
+
+func (s *Server) GetLeaderboardHandler(w http.ResponseWriter, r *http.Request) {
+	leaderboard, err := s.db.GetViewerLeaderboard(r.Context())
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("Error getting leaderboard data", "error", err)
+			http.Error(w, "Error getting leaderboard data", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if leaderboard == nil {
+		emptyLeaderboard := make([]db.Streamer, 0)
+		util.SendJSON(w, emptyLeaderboard)
+		return
+	}
+
+	util.SendJSON(w, leaderboard)
 }

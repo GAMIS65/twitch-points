@@ -42,6 +42,15 @@ export function useTotalEntriesStatic(options?: SWRConfiguration) {
   }>("/giveaway/entries-count", options);
 }
 
+export function useLeaderboardStatic(options?: SWRConfiguration) {
+  return useApiStatic<
+    {
+      total_redemptions: number;
+      username: string;
+    }[]
+  >("/giveaway/leaderboard", options);
+}
+
 export function useRecentEntries(options?: SWRConfiguration) {
   return useApi<
     {
