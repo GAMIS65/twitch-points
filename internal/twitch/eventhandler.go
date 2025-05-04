@@ -191,7 +191,6 @@ func (tc *TwitchEventSubClient) handleRewardRedemption(event twitch.EventChannel
 
 	_, err = tc.db.CreateRedemption(context.Background(), db.CreateRedemptionParams{
 		MessageID:  event.ID,
-		RewardID:   pgtype.Text{String: reward[0].RewardID, Valid: true},
 		ViewerID:   pgtype.Text{String: event.UserID, Valid: true},
 		StreamerID: pgtype.Text{String: event.BroadcasterUserId, Valid: true},
 	})

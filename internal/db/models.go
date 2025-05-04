@@ -10,7 +10,6 @@ import (
 
 type Redemption struct {
 	MessageID  string             `json:"message_id"`
-	RewardID   pgtype.Text        `json:"reward_id"`
 	StreamerID pgtype.Text        `json:"streamer_id"`
 	ViewerID   pgtype.Text        `json:"viewer_id"`
 	RedeemedAt pgtype.Timestamptz `json:"redeemed_at"`

@@ -68,6 +68,7 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	//TODO: Make this a setting somewhere
 	resp, err := client.CreateCustomReward(&helix.ChannelCustomRewardsParams{
 		BroadcasterID: user_id,
 		Title:         "giveaway test",

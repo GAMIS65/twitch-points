@@ -5,6 +5,7 @@ import Dashboard from "./Dashboard.tsx";
 import SignInPage from "./SignIn.tsx";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { SWRProvider } from "./providers/SWRProvider";
+import AddRewardPage from "./AddReward.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -13,6 +14,7 @@ createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/SignIn" element={<SignInPage />} />
+          <Route path="/AddReward" element={<AddRewardPage />} />
         </Routes>
       </BrowserRouter>
     </SWRProvider>

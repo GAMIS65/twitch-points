@@ -131,7 +131,7 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	session.Save(r, w)
 
 	w.Header().Set("Content-Type", "application/json")
-	http.Redirect(w, r, s.frontendURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, s.frontendURL+"/addreward", http.StatusTemporaryRedirect)
 }
 
 func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -186,8 +186,8 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		expiry, expiryOk := session.Values["expiry"].(int64)
 		userId, userIdOk := session.Values["user_id"].(string)
 
-		if !ok || !expiryOk || userIdOk || accessToken == "" {
-			slog.Error("Failed to authenticate user", "accessTokenOk", ok, "expiry", expiry, "userId", userId, "userIdOk", userIdOk)
+		if !ok || !expiryOk || !userIdOk || accessToken == "" {
+			slog.Error("Failed to authenticate user", "accessTokenOk", ok, "expiry", expiry, "expiryOk", expiryOk, "userId", userId, "userIdOk", userIdOk)
 			http.Redirect(w, r, s.frontendURL, http.StatusSeeOther)
 			return
 		}

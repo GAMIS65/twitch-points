@@ -12,29 +12,22 @@ import (
 )
 
 const createRedemption = `-- name: CreateRedemption :one
-INSERT INTO redemptions (message_id, reward_id, streamer_id, viewer_id)
-VALUES ($1, $2, $3, $4)
-RETURNING message_id, reward_id, streamer_id, viewer_id, redeemed_at
+INSERT INTO redemptions (message_id, streamer_id, viewer_id)
+VALUES ($1, $2, $3)
+RETURNING message_id, streamer_id, viewer_id, redeemed_at
 `
 
 type CreateRedemptionParams struct {
 	MessageID  string      `json:"message_id"`
-	RewardID   pgtype.Text `json:"reward_id"`
 	StreamerID pgtype.Text `json:"streamer_id"`
 	ViewerID   pgtype.Text `json:"viewer_id"`
 }
 
 func (q *Queries) CreateRedemption(ctx context.Context, arg CreateRedemptionParams) (Redemption, error) {
-	row := q.db.QueryRow(ctx, createRedemption,
-		arg.MessageID,
-		arg.RewardID,
-		arg.StreamerID,
-		arg.ViewerID,
-	)
+	row := q.db.QueryRow(ctx, createRedemption, arg.MessageID, arg.StreamerID, arg.ViewerID)
 	var i Redemption
 	err := row.Scan(
 		&i.MessageID,
-		&i.RewardID,
 		&i.StreamerID,
 		&i.ViewerID,
 		&i.RedeemedAt,

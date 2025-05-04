@@ -40,8 +40,8 @@ DELETE FROM rewards
 WHERE streamer_id = $1;
 
 -- name: CreateRedemption :one
-INSERT INTO redemptions (message_id, reward_id, streamer_id, viewer_id)
-VALUES ($1, $2, $3, $4)
+INSERT INTO redemptions (message_id, streamer_id, viewer_id)
+VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: GetViewerLeaderboard :many
