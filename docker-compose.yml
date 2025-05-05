@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: db.dockerfile
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: giveaway
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend.dockerfile
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      TWITCH_WS_URL: ${TWITCH_WS_URL}
+      CLIENT_ID: ${CLIENT_ID}
+      CLIENT_SECRET: ${CLIENT_SECRET}
+      HOST: ${HOST}
+      PORT: 8080
+      DB_URL: ${DB_URL}
+      ENVIRONMENT: ${ENVIRONMENT}
+      FRONTEND_URL: ${FRONTEND_URL}
+      BACKEND_DOMAIN_NAME: ${BACKEND_DOMAIN_NAME}
+      SESSION_KEY: ${SESSION_KEY}
+      MY_CHANNEL_ID: ${MY_CHANNEL_ID}
+      MY_ACCESS_TOKEN: ${MY_ACCESS_TOKEN}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "${HOST}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  migrate:
+    build:
+      context: .
+      dockerfile: migrate.dockerfile
+    environment:
+      DB_URL: ${DB_URL}
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "echo", "Migration complete"]
+      interval: 30s
+      timeout: 10s
+      retries: 1
+      start_period: 5s
+
+volumes:
+  db_data:
+
