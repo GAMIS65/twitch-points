@@ -8,7 +8,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: giveaway
     volumes:
@@ -43,12 +43,18 @@ services:
       WEBHOOK_URL: ${WEBHOOK_URL}
     depends_on:
       - db
+      - migrate
     healthcheck:
       test: ["CMD", "curl", "-f", "${HOST}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   migrate:
     build:
@@ -57,7 +63,8 @@ services:
     environment:
       DB_URL: ${DB_URL}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "echo", "Migration complete"]
       interval: 30s
