@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -32,9 +33,17 @@ func main() {
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	sessionKey := os.Getenv("SESSION_KEY")
 	backendDomainName := os.Getenv("BACKEND_DOMAIN_NAME")
-	dbURL := os.Getenv("DB_URL")
 	myAccessToken := os.Getenv("MY_ACCESS_TOKEN")
 	myChannelID := os.Getenv("MY_CHANNEL_ID")
+
+	// DB
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+	dbSSLMode := os.Getenv("DB_SSLMODE")
+	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", dbUser, dbPassword, dbHost, dbPort, dbName, dbSSLMode)
 
 	oauthConfig := &oauth2.Config{
 		ClientID:     clientID,

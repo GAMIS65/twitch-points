@@ -61,7 +61,7 @@ func (tc *TwitchEventSubClient) handleWelcome(message twitch.WelcomeMessage) {
 
 	streamers, err := tc.db.GetAllStreamersWithTokens(context.Background())
 	if err != nil {
-		slog.Error("Error getting streamers from the database", "erro", err)
+		slog.Error("Error getting streamers from the database", "error", err)
 	}
 
 	if len(streamers) < 1 {

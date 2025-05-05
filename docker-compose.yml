@@ -1,16 +1,13 @@
-version: '3.8'
-
 services:
   db:
     build:
       context: .
       dockerfile: db.dockerfile
-    ports:
-      - "5432:5432"
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: giveaway
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,7 +30,12 @@ services:
       CLIENT_SECRET: ${CLIENT_SECRET}
       HOST: ${HOST}
       PORT: 8080
-      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
       ENVIRONMENT: ${ENVIRONMENT}
       FRONTEND_URL: ${FRONTEND_URL}
       BACKEND_DOMAIN_NAME: ${BACKEND_DOMAIN_NAME}
@@ -61,7 +63,12 @@ services:
       context: .
       dockerfile: migrate.dockerfile
     environment:
-      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
     depends_on:
       db:
         condition: service_healthy
