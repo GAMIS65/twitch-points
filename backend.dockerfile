@@ -10,5 +10,6 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/main .
 COPY --from=builder /app/internal/sql/migrations /app/migrations
+COPY .env .env
 
 CMD ["./main"]
