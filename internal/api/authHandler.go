@@ -111,7 +111,7 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		s.twitchEventSub.SubscribeToEvents([]db.Streamer{newUser})
+		s.twitchWebhook.SubscribeToEvents([]db.Streamer{newUser})
 
 		slog.Info("Created a new user", "id", userData.ID, "username", userData.Login)
 	} else {

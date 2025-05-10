@@ -75,6 +75,20 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 		Cost:          1,
 	})
 
+	if resp != nil {
+		// TODO: Remove this later
+		slog.Info("Twitch API CreateCustomReward Response Details",
+			"user_id", user_id,
+			"statusCode", resp.StatusCode,
+			"twitchError", resp.Error,
+			"twitchErrorMessage", resp.ErrorMessage,
+			"rateLimit", resp.GetRateLimit(),
+			"rateLimitRemaining", resp.GetRateLimitRemaining(),
+			"rateLimitReset", resp.GetRateLimitReset(),
+			"dataLength", len(resp.Data.ChannelCustomRewards),
+		)
+	}
+
 	if err != nil {
 		slog.Error("Failed to create a channel point reward", "error", err, "id", user_id)
 		http.Error(w, "Failed to create a channel point reward", http.StatusInternalServerError)
