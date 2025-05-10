@@ -95,7 +95,9 @@ func main() {
 	}
 
 	// Initialize the client and set up event handlers
-	twitchWebhookClient.Initialize()
+	go func() {
+		twitchWebhookClient.Initialize()
+	}()
 
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
 	if util.IsDev() {

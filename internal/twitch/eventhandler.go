@@ -109,7 +109,7 @@ func (tc *TwitchWebhookClient) SubscribeToEvents(streamers []db.Streamer) {
 		for _, event := range tc.events {
 			slog.Info("Subscribing to an event", "streamerId", streamer.TwitchID, "streamerUsername", streamer.Username, "event", event)
 
-			err := tc.client.AddSubscription(event, streamer.TwitchID, twitchwh.Condition{
+			err := tc.client.AddSubscription(event, "1", twitchwh.Condition{
 				BroadcasterUserID: streamer.TwitchID,
 			})
 
