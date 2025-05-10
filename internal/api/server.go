@@ -15,22 +15,22 @@ import (
 )
 
 type Server struct {
-	host           string
-	frontendURL    string
-	sessionStore   *sessions.CookieStore
-	oauthConfig    *oauth2.Config
-	db             *db.DBStore
-	twitchEventSub *eventSub.TwitchEventSubClient
+	host          string
+	frontendURL   string
+	sessionStore  *sessions.CookieStore
+	oauthConfig   *oauth2.Config
+	db            *db.DBStore
+	twitchWebhook *eventSub.TwitchWebhookClient
 }
 
-func NewServer(host string, frontendURL string, backendDomainName string, config *oauth2.Config, sessionStore *sessions.CookieStore, dbStore *db.DBStore, twitchEventSub *eventSub.TwitchEventSubClient) *Server {
+func NewServer(host string, frontendURL string, backendDomainName string, config *oauth2.Config, sessionStore *sessions.CookieStore, dbStore *db.DBStore, twitchWebhook *eventSub.TwitchWebhookClient) *Server {
 	return &Server{
-		host:           host,
-		frontendURL:    frontendURL,
-		sessionStore:   sessionStore,
-		oauthConfig:    config,
-		db:             dbStore,
-		twitchEventSub: twitchEventSub,
+		host:          host,
+		frontendURL:   frontendURL,
+		sessionStore:  sessionStore,
+		oauthConfig:   config,
+		db:            dbStore,
+		twitchWebhook: twitchWebhook,
 	}
 }
 
@@ -49,6 +49,8 @@ func (s *Server) SetupRoutes() http.Handler {
 	r.Get("/auth/twitch/callback", s.callbackHandler)
 	r.Get("/logout/twitch", s.logoutHandler)
 	r.With(s.authMiddleware).Post("/add-reward", s.addRewardHandler)
+
+	r.HandleFunc("/eventsub", s.twitchWebhook.GetHandler())
 
 	r.Route("/giveaway", func(r chi.Router) {
 		r.Get("/streamers", s.GetStreamersHandler)
