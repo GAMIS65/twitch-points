@@ -14,7 +14,6 @@ import (
 	"github.com/gamis65/twitch-points/internal/util"
 	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v5/pgxpool"
-	eventSubs "github.com/joeyak/go-twitch-eventsub"
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	twitchOauth "golang.org/x/oauth2/twitch"
@@ -35,6 +34,8 @@ func main() {
 	backendDomainName := os.Getenv("BACKEND_DOMAIN_NAME")
 	myAccessToken := os.Getenv("MY_ACCESS_TOKEN")
 	myChannelID := os.Getenv("MY_CHANNEL_ID")
+	twitchWebhookSecret := os.Getenv("TWITCH_WEBHOOK_SECRET")
+	twitchWebhookURL := os.Getenv("TWITCH_WEBHOOK_URL")
 
 	// DB
 	dbUser := os.Getenv("DB_USER")
@@ -67,22 +68,35 @@ func main() {
 		log.Fatal("dbStore is nil")
 	}
 
-	events := []eventSubs.EventSubscription{
-		eventSubs.SubStreamOnline,
-		eventSubs.SubStreamOffline,
-		eventSubs.SubChannelChannelPointsCustomRewardUpdate,
-		eventSubs.SubChannelChannelPointsCustomRewardRedemptionAdd,
-		eventSubs.SubChannelUpdate,
+	// Define the events to subscribe to
+	events := []string{
+		"stream.online",
+		"stream.offline",
+		"channel.update",
+		"channel.channel_points_custom_reward_redemption.add",
+		"channel.channel_points_custom_reward.update",
 	}
 
-	twitchEventSubClient := twitch.NewTwitchClient(clientID, clientSecret, dbStore, events, myChannelID, myAccessToken)
-	twitchEventSubClient.Initialize()
+	// Initialize the Twitch webhook client
+	twitchWebhookClient, err := twitch.NewTwitchClient(
+		clientID,
+		clientSecret,
+		twitchWebhookSecret,
+		twitchWebhookURL,
+		dbStore,
+		events,
+		myChannelID,
+		myAccessToken,
+	)
 
+	if err != nil {
+		slog.Error("Failed to create Twitch webhook client", "error", err)
+		os.Exit(1)
+	}
+
+	// Initialize the client and set up event handlers
 	go func() {
-		err := twitchEventSubClient.Connect()
-		if err != nil {
-			slog.Error("Failed to connect to twitch", "error", err)
-		}
+		twitchWebhookClient.Initialize()
 	}()
 
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
@@ -112,7 +126,7 @@ func main() {
 		oauthConfig,
 		sessionStore,
 		dbStore,
-		twitchEventSubClient,
+		twitchWebhookClient,
 	)
 
 	slog.Info("Server listening", "host", host)
