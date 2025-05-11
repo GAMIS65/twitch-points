@@ -12,9 +12,6 @@ export default function AddRewardPage() {
         method: "POST",
         credentials: "include",
         mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
 
       if (!response.ok) {
