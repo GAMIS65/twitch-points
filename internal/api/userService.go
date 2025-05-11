@@ -90,15 +90,6 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var rewardParams ChannelCustomRewardsParams
-	err = json.NewDecoder(r.Body).Decode(&rewardParams)
-	if err != nil {
-		slog.Error("Error decoding request body", "error", err)
-		http.Error(w, "Invalid Request Body", http.StatusBadRequest)
-		return
-	}
-	rewardParams.BroadcasterID = userID // Ensure broadcaster ID is set from the session
-
 	existingReward, err := s.db.GetRewardsByStreamer(r.Context(), pgtype.Text{String: userID, Valid: true})
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("Error getting streamers rewards from the database", "error", err, "id", userID)
@@ -116,7 +107,13 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Info("Existing rewards deleted for user", "id", userID)
 	}
 
-	rewardID, err := createCustomChannelPointReward(s.oauthConfig.ClientID, accessToken, &rewardParams)
+	rewardID, err := createCustomChannelPointReward(s.oauthConfig.ClientID, accessToken, &ChannelCustomRewardsParams{
+		BroadcasterID: userID,
+		Title:         "giveaway test",
+		Cost:          10,
+		IsEnabled:     true,
+	})
+
 	if err != nil {
 		slog.Error("Failed to create a channel point reward", "error", err, "id", userID)
 		http.Error(w, "Failed to create a channel point reward", http.StatusInternalServerError)
