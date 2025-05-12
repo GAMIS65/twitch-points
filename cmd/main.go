@@ -47,6 +47,19 @@ func main() {
 	dbSSLMode := os.Getenv("DB_SSLMODE")
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", dbUser, dbPassword, dbHost, dbPort, dbName, dbSSLMode)
 
+	level := slog.LevelInfo
+	if util.IsDev() {
+		level = slog.LevelDebug
+	}
+
+	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level:     level,
+		AddSource: true,
+	})
+
+	logger := slog.New(jsonHandler)
+	slog.SetDefault(logger)
+
 	oauthConfig := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
