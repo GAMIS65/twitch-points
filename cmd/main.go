@@ -28,12 +28,13 @@ func main() {
 
 	frontendURL := os.Getenv("FRONTEND_URL")
 	host := os.Getenv("HOST")
-	clientID := os.Getenv("CLIENT_ID")
-	clientSecret := os.Getenv("CLIENT_SECRET")
 	sessionKey := os.Getenv("SESSION_KEY")
 	backendDomainName := os.Getenv("BACKEND_DOMAIN_NAME")
-	myAccessToken := os.Getenv("MY_ACCESS_TOKEN")
-	myChannelID := os.Getenv("MY_CHANNEL_ID")
+	cookieDomain := os.Getenv("COOKIE_DOMAIN")
+
+	// twitch
+	clientID := os.Getenv("TWITCH_CLIENT_ID")
+	clientSecret := os.Getenv("TWITCH_CLIENT_SECRET")
 	twitchWebhookSecret := os.Getenv("TWITCH_WEBHOOK_SECRET")
 	twitchWebhookURL := os.Getenv("TWITCH_WEBHOOK_URL")
 
@@ -85,8 +86,6 @@ func main() {
 		twitchWebhookURL,
 		dbStore,
 		events,
-		myChannelID,
-		myAccessToken,
 	)
 
 	if err != nil {
@@ -110,9 +109,8 @@ func main() {
 		}
 	} else {
 		sessionStore.Options = &sessions.Options{
-			Path: "/",
-			// TODO: change this
-			Domain:   "." + frontendURL,
+			Path:     "/",
+			Domain:   cookieDomain,
 			HttpOnly: true,
 			Secure:   true,
 			SameSite: http.SameSiteNoneMode,

@@ -9,7 +9,7 @@ import (
 )
 
 func SendWebHook(text string) error {
-	webhookURL := os.Getenv("WEBHOOK_URL")
+	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
 	if webhookURL == "" {
 		return errors.New("WEBHOOK_URL environment variable is not set")
 	}

@@ -137,7 +137,7 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// TODO: Move this somewhere
+// TODO: delete this and use the one from the helix library instead. i'm too scared to do it now just in case it breaks something somehow (i'm not a twitch affliate so it's hard to test).
 func createCustomChannelPointReward(clientID string, accessToken string, reward *ChannelCustomRewardsParams) (string, error) {
 	url := fmt.Sprintf("https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id=%s", reward.BroadcasterID)
 

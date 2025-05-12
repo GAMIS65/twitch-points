@@ -15,19 +15,16 @@ import (
 )
 
 type TwitchWebhookClient struct {
-	client         *twitchwh.Client
-	clientId       string
-	clientSecret   string
-	webhookSecret  string
-	webhookURL     string
-	db             *db.DBStore
-	events         []string
-	myChannelID    string
-	myAccessToken  string
-	eventEndpoints map[string]string
+	client        *twitchwh.Client
+	clientId      string
+	clientSecret  string
+	webhookSecret string
+	webhookURL    string
+	db            *db.DBStore
+	events        []string
 }
 
-func NewTwitchClient(clientId string, clientSecret string, webhookSecret string, webhookURL string, dbStore *db.DBStore, eventsToSubscribeTo []string, myChannelId string, myAccessToken string) (*TwitchWebhookClient, error) {
+func NewTwitchClient(clientId string, clientSecret string, webhookSecret string, webhookURL string, dbStore *db.DBStore, eventsToSubscribeTo []string) (*TwitchWebhookClient, error) {
 	client, err := twitchwh.New(twitchwh.ClientConfig{
 		ClientID:      clientId,
 		ClientSecret:  clientSecret,
@@ -48,15 +45,6 @@ func NewTwitchClient(clientId string, clientSecret string, webhookSecret string,
 		webhookURL:    webhookURL,
 		db:            dbStore,
 		events:        eventsToSubscribeTo,
-		myChannelID:   myChannelId,
-		myAccessToken: myAccessToken,
-		eventEndpoints: map[string]string{
-			"stream.online":  "stream.online",
-			"stream.offline": "stream.offline",
-			"channel.update": "channel.update",
-			"channel.channel_points_custom_reward_redemption.add": "channel.channel_points_custom_reward_redemption.add",
-			"channel.channel_points_custom_reward.update":         "channel.channel_points_custom_reward.update",
-		},
 	}, nil
 }
 
