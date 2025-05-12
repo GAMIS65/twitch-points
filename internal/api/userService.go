@@ -108,10 +108,12 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rewardID, err := createCustomChannelPointReward(s.oauthConfig.ClientID, accessToken, &ChannelCustomRewardsParams{
-		BroadcasterID: userID,
-		Title:         "giveaway test",
-		Cost:          10,
-		IsEnabled:     true,
+		BroadcasterID:                userID,
+		Title:                        "1 Giveaway Entry",
+		Cost:                         100,
+		IsEnabled:                    true,
+		IsMaxPerUserPerStreamEnabled: true,
+		MaxPerUserPerStream:          1,
 	})
 
 	if err != nil {
