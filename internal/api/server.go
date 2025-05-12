@@ -42,7 +42,6 @@ func (s *Server) SetupRoutes() http.Handler {
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	}))
-	r.Use(middleware.Logger) // TODO: Replace this with a custom logger
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Heartbeat("/health"))
 
