@@ -8,6 +8,9 @@ RUN go build -o main ./cmd/main.go
 
 FROM alpine:latest
 WORKDIR /app
+
+RUN apk add --no-cache curl
+
 COPY --from=builder /app/main .
 COPY --from=builder /app/internal/sql/migrations /app/migrations
 COPY .env .env
