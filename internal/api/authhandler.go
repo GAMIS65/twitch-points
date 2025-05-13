@@ -71,10 +71,15 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger := s.logger.With(
+		slog.String("user_id", userData.ID),
+		slog.String("username", userData.Login),
+	)
+
 	if !util.IsDev() {
 		// Sign in should be only available to channels with channel points
 		if userData.BroadcasterType == "" {
-			slog.Info("A user who is not an affiliate or a partner tried to sign in", "username", userData.Login)
+			logger.Info("A user who is not an affiliate or a partner tried to sign in")
 			http.Error(w, "You must be an affiliate to log in", http.StatusUnauthorized)
 			return
 		}
@@ -89,7 +94,7 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	existingUser, err := s.db.GetStreamerByID(r.Context(), userData.ID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			slog.Error("Database error when fetching user", "error", err, "id", userData.ID)
+			logger.Error("Database error when fetching user", "error", err)
 			http.Error(w, "Database error", http.StatusInternalServerError)
 			return
 		}
@@ -106,14 +111,14 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if err != nil {
-			slog.Error("Error creating a new user", "error", err, "id", userData.ID, "username", userData.Login)
+			logger.Error("Error creating a new user", "error", err)
 			http.Redirect(w, r, s.frontendURL+"/auth/twitch/login", http.StatusTemporaryRedirect)
 			return
 		}
 
 		s.twitchWebhook.SubscribeToEvents([]db.Streamer{newUser})
 
-		slog.Info("Created a new user", "id", userData.ID, "username", userData.Login)
+		logger.Info("Created a new user")
 	} else {
 		_, err := s.db.UpdateStreamerTokens(r.Context(), db.UpdateStreamerTokensParams{
 			TwitchID:     userData.ID,
@@ -122,10 +127,10 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if err != nil {
-			slog.Error("Error updating user tokens", "error", err, "id", userData.ID, "username", userData.Login)
+			logger.Error("Error updating user tokens", "error", err)
 		}
 
-		slog.Info("User logged in", "id", userData.ID, "username", userData.Login)
+		logger.Info("User logged in")
 	}
 
 	session.Save(r, w)

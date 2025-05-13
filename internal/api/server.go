@@ -21,6 +21,7 @@ type Server struct {
 	oauthConfig   *oauth2.Config
 	db            *db.DBStore
 	twitchWebhook *eventSub.TwitchWebhookClient
+	logger        *slog.Logger
 }
 
 func NewServer(host string, frontendURL string, backendDomainName string, config *oauth2.Config, sessionStore *sessions.CookieStore, dbStore *db.DBStore, twitchWebhook *eventSub.TwitchWebhookClient) *Server {
@@ -31,6 +32,7 @@ func NewServer(host string, frontendURL string, backendDomainName string, config
 		oauthConfig:   config,
 		db:            dbStore,
 		twitchWebhook: twitchWebhook,
+		logger:        slog.Default(),
 	}
 }
 

@@ -22,6 +22,7 @@ type TwitchWebhookClient struct {
 	webhookURL    string
 	db            *db.DBStore
 	events        []string
+	logger        *slog.Logger
 }
 
 func NewTwitchClient(clientId string, clientSecret string, webhookSecret string, webhookURL string, dbStore *db.DBStore, eventsToSubscribeTo []string) (*TwitchWebhookClient, error) {
@@ -45,7 +46,55 @@ func NewTwitchClient(clientId string, clientSecret string, webhookSecret string,
 		webhookURL:    webhookURL,
 		db:            dbStore,
 		events:        eventsToSubscribeTo,
+		logger:        slog.Default(),
 	}, nil
+}
+
+// getEventLogger creates a contextualized logger with event specific fields
+func (tc *TwitchWebhookClient) getEventLogger(eventType string, eventData interface{}) *slog.Logger {
+	logger := tc.logger.With(slog.String("eventType", eventType))
+
+	// Add common fields based on event data structure
+	switch data := eventData.(type) {
+	case struct {
+		BroadcasterUserID    string `json:"broadcaster_user_id"`
+		BroadcasterUserName  string `json:"broadcaster_user_name"`
+		BroadcasterUserLogin string `json:"broadcaster_user_login"`
+	}:
+		logger = logger.With(
+			slog.String("streamer_id", data.BroadcasterUserID),
+			slog.String("streamer_username", data.BroadcasterUserLogin),
+		)
+	case struct {
+		BroadcasterUserID    string `json:"broadcaster_user_id"`
+		BroadcasterUserName  string `json:"broadcaster_user_name"`
+		BroadcasterUserLogin string `json:"broadcaster_user_login"`
+		UserID               string `json:"user_id"`
+		UserLogin            string `json:"user_login"`
+		UserName             string `json:"user_name"`
+		ID                   string `json:"id"`
+		Reward               struct {
+			ID    string `json:"id"`
+			Title string `json:"title"`
+			Cost  int    `json:"cost"`
+		} `json:"reward"`
+		User struct {
+			ID        string `json:"id"`
+			Login     string `json:"login"`
+			UserLogin string `json:"user_login"`
+		} `json:"user"`
+	}:
+		logger = logger.With(
+			slog.String("streamer_id", data.BroadcasterUserID),
+			slog.String("streamer_username", data.BroadcasterUserLogin),
+			slog.String("viewer_id", data.UserID),
+			slog.String("viewer_username", data.UserLogin),
+			slog.String("reward_id", data.Reward.ID),
+			slog.String("reward_title", data.Reward.Title),
+		)
+	}
+
+	return logger
 }
 
 func (tc *TwitchWebhookClient) Initialize() {
@@ -60,15 +109,20 @@ func (tc *TwitchWebhookClient) Initialize() {
 
 	streamers, err := tc.db.GetAllStreamersWithTokens(context.Background())
 	if err != nil {
-		slog.Error("Error getting streamers from the database", "error", err)
+		tc.logger.Error("Error getting streamers from the database", "error", err)
 		return
 	}
 
 	// Refresh tokens for all streamers
 	for i, streamer := range streamers {
+		streamerLogger := tc.logger.With(
+			slog.String("streamer_id", streamer.TwitchID),
+			slog.String("streamer_username", streamer.Username),
+		)
+
 		newToken, err := GetRefreshTwitchToken(streamer.RefreshToken.String, tc.clientId, tc.clientSecret)
 		if err != nil {
-			slog.Error("Error refreshing token", "error", err)
+			streamerLogger.Error("Error refreshing token", "error", err)
 			continue
 		}
 
@@ -79,14 +133,14 @@ func (tc *TwitchWebhookClient) Initialize() {
 		})
 
 		if err != nil {
-			slog.Error("Failed to refresh token", "error", err, "id", streamer.TwitchID, "username", streamer.Username)
+			streamerLogger.Error("Failed to refresh token", "error", err)
 			continue
 		}
 
 		streamers[i].AccessToken.String = newToken.AccessToken
 		streamers[i].RefreshToken.String = newToken.RefreshToken
 
-		slog.Info("Refreshed streamer token", "id", streamer.TwitchID, "username", streamer.Username)
+		streamerLogger.Info("Refreshed streamer token")
 	}
 
 	tc.SubscribeToEvents(streamers)
@@ -94,19 +148,22 @@ func (tc *TwitchWebhookClient) Initialize() {
 
 func (tc *TwitchWebhookClient) SubscribeToEvents(streamers []db.Streamer) {
 	for _, streamer := range streamers {
+		streamerLogger := tc.logger.With(
+			slog.String("streamer_id", streamer.TwitchID),
+			slog.String("streamer_username", streamer.Username),
+		)
+
 		for _, event := range tc.events {
-			slog.Info("Subscribing to an event", "streamerId", streamer.TwitchID, "streamerUsername", streamer.Username, "event", event)
+			streamerLogger.Info("Subscribing to an event", "event", event)
 
 			err := tc.client.AddSubscription(event, "1", twitchwh.Condition{
 				BroadcasterUserID: streamer.TwitchID,
 			})
 
 			if err != nil {
-				slog.Error("Error subscribing to an event", "event", event, "error", err, "streamerID", streamer.TwitchID)
+				streamerLogger.Error("Error subscribing to an event", "event", event, "error", err)
 				continue
 			}
-
-			slog.Info("Successfully subscribed to event", "event", event, "streamerID", streamer.TwitchID)
 		}
 	}
 }
@@ -119,11 +176,12 @@ func (tc *TwitchWebhookClient) handleStreamOnline(event json.RawMessage) {
 	}
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
-		slog.Error("Error parsing stream online event", "error", err)
+		tc.logger.Error("Error parsing stream online event", "error", err)
 		return
 	}
 
-	slog.Info("Streamer went live", "userId", eventData.BroadcasterUserID, "username", eventData.BroadcasterUserLogin)
+	logger := tc.getEventLogger("stream.online", eventData)
+	logger.Info("Streamer went live")
 	util.SendWebHook(eventData.BroadcasterUserLogin + " went live")
 }
 
@@ -135,11 +193,12 @@ func (tc *TwitchWebhookClient) handleStreamOffline(event json.RawMessage) {
 	}
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
-		slog.Error("Error parsing stream offline event", "error", err)
+		tc.logger.Error("Error parsing stream offline event", "error", err)
 		return
 	}
 
-	slog.Info("Streamer went offline", "userId", eventData.BroadcasterUserID, "username", eventData.BroadcasterUserLogin)
+	logger := tc.getEventLogger("stream.offline", eventData)
+	logger.Info("Streamer went offline")
 }
 
 func (tc *TwitchWebhookClient) handleRewardRedemption(event json.RawMessage) {
@@ -164,19 +223,21 @@ func (tc *TwitchWebhookClient) handleRewardRedemption(event json.RawMessage) {
 	}
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
-		slog.Error("Error parsing reward redemption event", "error", err)
+		tc.logger.Error("Error parsing reward redemption event", "error", err)
 		return
 	}
 
+	logger := tc.getEventLogger("reward.redemption", eventData)
+
 	reward, err := tc.db.GetRewardsByStreamer(context.Background(), pgtype.Text{String: eventData.BroadcasterUserID, Valid: true})
 	if err != nil {
-		slog.Error("Error getting a reward for a streamer from db", "error", err, "streamerId", eventData.BroadcasterUserID, "streamerUsername", eventData.BroadcasterUserName, "reward", eventData.Reward.Title, "viewerId", eventData.UserID, "viewerUsername", eventData.UserLogin)
+		logger.Error("Error getting a reward for a streamer from db", "error", err)
 		util.SendWebHook("Error getting a reward for a streamer from db " + eventData.BroadcasterUserLogin)
 		return
 	}
 
 	if len(reward) == 0 {
-		slog.Warn("No rewards found for streamer", "streamerId", eventData.BroadcasterUserID)
+		logger.Warn("No rewards found for streamer")
 		return
 	}
 
@@ -188,7 +249,7 @@ func (tc *TwitchWebhookClient) handleRewardRedemption(event json.RawMessage) {
 	viewer, err := tc.db.GetViewerByID(context.Background(), eventData.UserID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			slog.Error("Error getting viewer by id", "error", err, "viewerId", eventData.UserID, "viewerUsername", eventData.UserLogin, "streamerId", eventData.BroadcasterUserID, "streamerUsername", eventData.BroadcasterUserName)
+			logger.Error("Error getting viewer by id", "error", err)
 			return
 		}
 	}
@@ -202,7 +263,7 @@ func (tc *TwitchWebhookClient) handleRewardRedemption(event json.RawMessage) {
 		})
 
 		if err != nil {
-			slog.Error("Error creating a new viewer", "error", err, "viewerId", eventData.UserID, "viewerUsername", eventData.UserLogin, "streamerId", eventData.BroadcasterUserID, "streamerUsername", eventData.BroadcasterUserName)
+			logger.Error("Error creating a new viewer", "error", err)
 			return
 		}
 	}
@@ -214,12 +275,12 @@ func (tc *TwitchWebhookClient) handleRewardRedemption(event json.RawMessage) {
 	})
 
 	if err != nil {
-		slog.Error("Error adding a redemption to db", "error", err, "streamerId", eventData.BroadcasterUserID, "viewerId", eventData.UserID)
+		logger.Error("Error adding a redemption to db", "error", err)
 		util.SendWebHook("Error adding a redemption to db " + eventData.BroadcasterUserLogin)
 		return
 	}
 
-	slog.Info("User redeemed a reward", "userId", eventData.UserID, "username", eventData.UserLogin, "channel", eventData.BroadcasterUserLogin)
+	logger.Info("User redeemed a reward")
 	util.SendWebHook(eventData.UserLogin + " redeemed an entry in " + eventData.BroadcasterUserLogin)
 }
 
@@ -231,11 +292,12 @@ func (tc *TwitchWebhookClient) handleChannelUpdate(event json.RawMessage) {
 	}
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
-		slog.Error("Error parsing channel update event", "error", err)
+		tc.logger.Error("Error parsing channel update event", "error", err)
 		return
 	}
 
-	slog.Info("Channel updated", "channel", eventData.BroadcasterUserLogin, "title", eventData.Title)
+	logger := tc.getEventLogger("channel.update", eventData)
+	logger.Info("Channel updated", "title", eventData.Title)
 }
 
 func (tc *TwitchWebhookClient) handleRewardUpdate(event json.RawMessage) {
@@ -247,11 +309,12 @@ func (tc *TwitchWebhookClient) handleRewardUpdate(event json.RawMessage) {
 	}
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
-		slog.Error("Error parsing reward update event", "error", err)
+		tc.logger.Error("Error parsing reward update event", "error", err)
 		return
 	}
 
-	slog.Warn("Streamer updated a channel point reward", "streamer", eventData.BroadcasterUserLogin, "reward", eventData.Title, "cost", eventData.Cost)
+	logger := tc.getEventLogger("reward.update", eventData)
+	logger.Warn("Streamer updated a channel point reward", "reward", eventData.Title, "cost", eventData.Cost)
 	util.SendWebHook(eventData.BroadcasterUserLogin + " updated a channel point reward, title=" + eventData.Title)
 }
 
