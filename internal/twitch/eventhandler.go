@@ -62,8 +62,8 @@ func (tc *TwitchWebhookClient) getEventLogger(eventType string, eventData interf
 		BroadcasterUserLogin string `json:"broadcaster_user_login"`
 	}:
 		logger = logger.With(
-			slog.String("streamerId", data.BroadcasterUserID),
-			slog.String("streamerUsername", data.BroadcasterUserLogin),
+			slog.String("streamer_id", data.BroadcasterUserID),
+			slog.String("streamer_username", data.BroadcasterUserLogin),
 		)
 	case struct {
 		BroadcasterUserID    string `json:"broadcaster_user_id"`
@@ -85,12 +85,12 @@ func (tc *TwitchWebhookClient) getEventLogger(eventType string, eventData interf
 		} `json:"user"`
 	}:
 		logger = logger.With(
-			slog.String("streamerId", data.BroadcasterUserID),
-			slog.String("streamerUsername", data.BroadcasterUserLogin),
-			slog.String("viewerId", data.UserID),
-			slog.String("viewerUsername", data.UserLogin),
-			slog.String("rewardId", data.Reward.ID),
-			slog.String("rewardTitle", data.Reward.Title),
+			slog.String("streamer_id", data.BroadcasterUserID),
+			slog.String("streamer_username", data.BroadcasterUserLogin),
+			slog.String("viewer_id", data.UserID),
+			slog.String("viewer_username", data.UserLogin),
+			slog.String("reward_id", data.Reward.ID),
+			slog.String("reward_title", data.Reward.Title),
 		)
 	}
 
@@ -116,8 +116,8 @@ func (tc *TwitchWebhookClient) Initialize() {
 	// Refresh tokens for all streamers
 	for i, streamer := range streamers {
 		streamerLogger := tc.logger.With(
-			slog.String("id", streamer.TwitchID),
-			slog.String("username", streamer.Username),
+			slog.String("streamer_id", streamer.TwitchID),
+			slog.String("streamer_username", streamer.Username),
 		)
 
 		newToken, err := GetRefreshTwitchToken(streamer.RefreshToken.String, tc.clientId, tc.clientSecret)
@@ -149,8 +149,8 @@ func (tc *TwitchWebhookClient) Initialize() {
 func (tc *TwitchWebhookClient) SubscribeToEvents(streamers []db.Streamer) {
 	for _, streamer := range streamers {
 		streamerLogger := tc.logger.With(
-			slog.String("streamerId", streamer.TwitchID),
-			slog.String("streamerUsername", streamer.Username),
+			slog.String("streamer_id", streamer.TwitchID),
+			slog.String("streamer_username", streamer.Username),
 		)
 
 		for _, event := range tc.events {

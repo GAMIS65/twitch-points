@@ -83,16 +83,21 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+
+	logger := s.logger.With(
+		slog.String("user_id", userID),
+	)
+
 	accessToken, ok := session.Values["access_token"].(string)
 	if !ok || accessToken == "" {
-		slog.Error("Access token not found in session")
+		logger.Error("Access token not found in session")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	existingReward, err := s.db.GetRewardsByStreamer(r.Context(), pgtype.Text{String: userID, Valid: true})
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		slog.Error("Error getting streamers rewards from the database", "error", err, "id", userID)
+		logger.Error("Error getting streamers rewards from the database", "error", err)
 		http.Error(w, "Error getting streamers rewards from the database", http.StatusInternalServerError)
 		return
 	}
@@ -100,11 +105,11 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 	if len(existingReward) > 0 {
 		err := s.db.DeleteRewardsByStreamerID(r.Context(), pgtype.Text{String: userID, Valid: true})
 		if err != nil {
-			slog.Error("Error while trying to delete existing rewards", "error", err, "id", userID)
+			logger.Error("Error while trying to delete existing rewards", "error", err)
 			http.Error(w, "Error while trying to delete existing rewards", http.StatusInternalServerError)
 			return
 		}
-		slog.Info("Existing rewards deleted for user", "id", userID)
+		logger.Info("Existing rewards deleted for user")
 	}
 
 	rewardID, err := createCustomChannelPointReward(s.oauthConfig.ClientID, accessToken, &ChannelCustomRewardsParams{
@@ -117,7 +122,7 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		slog.Error("Failed to create a channel point reward", "error", err, "id", userID)
+		logger.Error("Failed to create a channel point reward", "error", err)
 		http.Error(w, "Failed to create a channel point reward", http.StatusInternalServerError)
 		return
 	}
@@ -128,12 +133,12 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		slog.Error("Error adding new reward to database", "error", err, "id", userID, "reward_id", rewardID)
+		logger.Error("Error adding new reward to database", "error", err, "reward_id", rewardID)
 		http.Error(w, "Error adding new reward to database", http.StatusInternalServerError)
 		return
 	}
 
-	slog.Info("Channel point reward created successfully", "id", userID, "reward_id", rewardID)
+	logger.Info("Channel point reward created successfully", "reward_id", rewardID)
 	w.WriteHeader(http.StatusOK)
 }
 
