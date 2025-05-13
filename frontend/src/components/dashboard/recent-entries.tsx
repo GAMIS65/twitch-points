@@ -19,7 +19,7 @@ export function RecentEntries() {
           <Clock className="h-5 w-5 text-purple-500" />
           Recent Entries
         </CardTitle>
-        <CardDescription>Latest viewers who entered giveaways</CardDescription>
+        <CardDescription>Latest entries to the giveaway</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading && (
