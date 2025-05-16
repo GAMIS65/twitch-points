@@ -51,6 +51,15 @@ export function useLeaderboardStatic(options?: SWRConfiguration) {
   >("/giveaway/leaderboard", options);
 }
 
+export function useLeaderboard(options?: SWRConfiguration) {
+  return useApi<
+    {
+      total_redemptions: number;
+      username: string;
+    }[]
+  >("/giveaway/leaderboard", options);
+}
+
 export function useRecentEntries(options?: SWRConfiguration) {
   return useApi<
     {

@@ -13,15 +13,22 @@ export function Header() {
           GAMIS65's giveaway tool
         </Link>
       </div>
-      <Link to="/signin">
-        <Button
-          className="gap-1 bg-purple-600 hover:bg-purple-700"
-          variant="default"
-        >
-          <TwitchIcon className="h-4 w-4" />
-          Streamer Sign In
-        </Button>
-      </Link>
+      <div className="flex items-center gap-3">
+        <Link to="/wheel">
+          <Button className="gap-1" variant="default">
+            Spin the wheel
+          </Button>
+        </Link>
+        <Link to="/signin">
+          <Button
+            className="gap-1 bg-purple-600 hover:bg-purple-700"
+            variant="default"
+          >
+            <TwitchIcon className="h-4 w-4" />
+            Streamer Sign In
+          </Button>
+        </Link>
+      </div>
     </header>
   );
 }
