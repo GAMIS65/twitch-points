@@ -315,7 +315,6 @@ func (tc *TwitchWebhookClient) handleRewardUpdate(event json.RawMessage) {
 
 	logger := tc.getEventLogger("reward.update", eventData)
 	logger.Warn("Streamer updated a channel point reward", "reward", eventData.Title, "cost", eventData.Cost)
-	util.SendWebHook(eventData.BroadcasterUserLogin + " updated a channel point reward, title=" + eventData.Title)
 }
 
 // GetHandler returns the HTTP handler for webhook events
