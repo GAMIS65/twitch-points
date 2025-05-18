@@ -26,7 +26,7 @@ export default function WheelPage() {
     determineAngle: 0,
     style: {
       label: {
-        align: "left" as CanvasTextAlign,
+        align: "right" as CanvasTextAlign,
       },
       canvas: {
         bg: "transparent",
