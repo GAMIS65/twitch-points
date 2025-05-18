@@ -3,14 +3,11 @@ import { StatsCards } from "./components/dashboard/stats-card";
 import { StreamersList } from "./components/dashboard/streamer-list";
 import { LeaderboardTable } from "./components/dashboard/leaderboard";
 import { RecentEntries } from "./components/dashboard/recent-entries";
-import {
-  useTotalEntriesStatic,
-  useTotalParticipantsStatic,
-} from "./hooks/use-api";
+import { useTotalEntries, useTotalParticipants } from "./hooks/use-api";
 
 export default function Dashboard() {
-  const { data: participantsCount } = useTotalParticipantsStatic();
-  const { data: entriesCount } = useTotalEntriesStatic();
+  const { data: participantsCount } = useTotalParticipants();
+  const { data: entriesCount } = useTotalEntries();
 
   return (
     <div className="flex min-h-screen bg-background">

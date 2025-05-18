@@ -14,10 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import {
-  useLeaderboardStatic,
-  useTotalEntriesStatic,
-} from "../../hooks/use-api";
+import { useLeaderboard, useTotalEntries } from "../../hooks/use-api";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 
@@ -27,9 +24,9 @@ export function LeaderboardTable() {
     error,
     isLoading,
     mutate: mutateLeaderboard,
-  } = useLeaderboardStatic();
+  } = useLeaderboard();
 
-  const { data: entriesCount, mutate: mutateEntries } = useTotalEntriesStatic();
+  const { data: entriesCount, mutate: mutateEntries } = useTotalEntries();
 
   // Function to refresh all data sources
   const refreshData = () => {
