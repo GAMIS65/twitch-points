@@ -10,6 +10,14 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type TotalParticipantsResponse struct {
+	TotalParticipants int `json:"total_participants"`
+}
+
+type TotalEntriesResponse struct {
+	TotalEntries int `json:"total_entries"`
+}
+
 func (s *Server) GetStreamersHandler(w http.ResponseWriter, r *http.Request) {
 	streamers, err := s.db.GetAllStreamers(r.Context())
 	if err != nil {
@@ -49,10 +57,6 @@ func (s *Server) GetRecentEntriesHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) GetTotalParticipantsHandler(w http.ResponseWriter, r *http.Request) {
-	type TotalParticipantsResponse struct {
-		TotalParticipants int `json:"total_participants"`
-	}
-
 	totalParticipants, err := s.db.GetTotalParticipantsCount(r.Context())
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
@@ -70,10 +74,6 @@ func (s *Server) GetTotalParticipantsHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (s *Server) GetTotalEntriesHandler(w http.ResponseWriter, r *http.Request) {
-	type TotalEntriesResponse struct {
-		TotalEntries int `json:"total_entries"`
-	}
-
 	totalEntries, err := s.db.GetTotalRedemptionsCount(r.Context())
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {

@@ -25,6 +25,45 @@ type TwitchWebhookClient struct {
 	logger        *slog.Logger
 }
 
+type StreamEvent struct {
+	BroadcasterUserID    string `json:"broadcaster_user_id"`
+	BroadcasterUserName  string `json:"broadcaster_user_name"`
+	BroadcasterUserLogin string `json:"broadcaster_user_login"`
+}
+
+type ChannelUpdateEvent struct {
+	BroadcasterUserID    string `json:"broadcaster_user_id"`
+	BroadcasterUserLogin string `json:"broadcaster_user_login"`
+	Title                string `json:"title"`
+}
+
+type RewardUpdateEvent struct {
+	BroadcasterUserID    string `json:"broadcaster_user_id"`
+	BroadcasterUserLogin string `json:"broadcaster_user_login"`
+	Title                string `json:"title"`
+	Cost                 int    `json:"cost"`
+}
+
+type RewardRedemptionEvent struct {
+	BroadcasterUserID    string `json:"broadcaster_user_id"`
+	BroadcasterUserName  string `json:"broadcaster_user_name"`
+	BroadcasterUserLogin string `json:"broadcaster_user_login"`
+	UserID               string `json:"user_id"`
+	UserLogin            string `json:"user_login"`
+	UserName             string `json:"user_name"`
+	ID                   string `json:"id"` // Redemption ID
+	Reward               struct {
+		ID    string `json:"id"`
+		Title string `json:"title"`
+		Cost  int    `json:"cost"`
+	} `json:"reward"`
+	User struct {
+		ID        string `json:"id"`
+		Login     string `json:"login"`
+		UserLogin string `json:"user_login"`
+	} `json:"user"`
+}
+
 func NewTwitchClient(clientId string, clientSecret string, webhookSecret string, webhookURL string, dbStore *db.DBStore, eventsToSubscribeTo []string) (*TwitchWebhookClient, error) {
 	client, err := twitchwh.New(twitchwh.ClientConfig{
 		ClientID:      clientId,
@@ -51,39 +90,17 @@ func NewTwitchClient(clientId string, clientSecret string, webhookSecret string,
 }
 
 // getEventLogger creates a contextualized logger with event specific fields
-func (tc *TwitchWebhookClient) getEventLogger(eventType string, eventData interface{}) *slog.Logger {
+func (tc *TwitchWebhookClient) getEventLogger(eventType string, eventData any) *slog.Logger {
 	logger := tc.logger.With(slog.String("eventType", eventType))
 
 	// Add common fields based on event data structure
 	switch data := eventData.(type) {
-	case struct {
-		BroadcasterUserID    string `json:"broadcaster_user_id"`
-		BroadcasterUserName  string `json:"broadcaster_user_name"`
-		BroadcasterUserLogin string `json:"broadcaster_user_login"`
-	}:
+	case StreamEvent:
 		logger = logger.With(
 			slog.String("streamer_id", data.BroadcasterUserID),
 			slog.String("streamer_username", data.BroadcasterUserLogin),
 		)
-	case struct {
-		BroadcasterUserID    string `json:"broadcaster_user_id"`
-		BroadcasterUserName  string `json:"broadcaster_user_name"`
-		BroadcasterUserLogin string `json:"broadcaster_user_login"`
-		UserID               string `json:"user_id"`
-		UserLogin            string `json:"user_login"`
-		UserName             string `json:"user_name"`
-		ID                   string `json:"id"`
-		Reward               struct {
-			ID    string `json:"id"`
-			Title string `json:"title"`
-			Cost  int    `json:"cost"`
-		} `json:"reward"`
-		User struct {
-			ID        string `json:"id"`
-			Login     string `json:"login"`
-			UserLogin string `json:"user_login"`
-		} `json:"user"`
-	}:
+	case RewardRedemptionEvent:
 		logger = logger.With(
 			slog.String("streamer_id", data.BroadcasterUserID),
 			slog.String("streamer_username", data.BroadcasterUserLogin),
@@ -169,11 +186,7 @@ func (tc *TwitchWebhookClient) SubscribeToEvents(streamers []db.Streamer) {
 }
 
 func (tc *TwitchWebhookClient) handleStreamOnline(event json.RawMessage) {
-	var eventData struct {
-		BroadcasterUserID    string `json:"broadcaster_user_id"`
-		BroadcasterUserName  string `json:"broadcaster_user_name"`
-		BroadcasterUserLogin string `json:"broadcaster_user_login"`
-	}
+	var eventData StreamEvent
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
 		tc.logger.Error("Error parsing stream online event", "error", err)
@@ -186,11 +199,7 @@ func (tc *TwitchWebhookClient) handleStreamOnline(event json.RawMessage) {
 }
 
 func (tc *TwitchWebhookClient) handleStreamOffline(event json.RawMessage) {
-	var eventData struct {
-		BroadcasterUserID    string `json:"broadcaster_user_id"`
-		BroadcasterUserName  string `json:"broadcaster_user_name"`
-		BroadcasterUserLogin string `json:"broadcaster_user_login"`
-	}
+	var eventData StreamEvent
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
 		tc.logger.Error("Error parsing stream offline event", "error", err)
@@ -202,25 +211,7 @@ func (tc *TwitchWebhookClient) handleStreamOffline(event json.RawMessage) {
 }
 
 func (tc *TwitchWebhookClient) handleRewardRedemption(event json.RawMessage) {
-	var eventData struct {
-		BroadcasterUserID    string `json:"broadcaster_user_id"`
-		BroadcasterUserName  string `json:"broadcaster_user_name"`
-		BroadcasterUserLogin string `json:"broadcaster_user_login"`
-		UserID               string `json:"user_id"`
-		UserLogin            string `json:"user_login"`
-		UserName             string `json:"user_name"`
-		ID                   string `json:"id"` // Redemption ID
-		Reward               struct {
-			ID    string `json:"id"`
-			Title string `json:"title"`
-			Cost  int    `json:"cost"`
-		} `json:"reward"`
-		User struct {
-			ID        string `json:"id"`
-			Login     string `json:"login"`
-			UserLogin string `json:"user_login"`
-		} `json:"user"`
-	}
+	var eventData RewardRedemptionEvent
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
 		tc.logger.Error("Error parsing reward redemption event", "error", err)
@@ -285,11 +276,7 @@ func (tc *TwitchWebhookClient) handleRewardRedemption(event json.RawMessage) {
 }
 
 func (tc *TwitchWebhookClient) handleChannelUpdate(event json.RawMessage) {
-	var eventData struct {
-		BroadcasterUserID    string `json:"broadcaster_user_id"`
-		BroadcasterUserLogin string `json:"broadcaster_user_login"`
-		Title                string `json:"title"`
-	}
+	var eventData ChannelUpdateEvent
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
 		tc.logger.Error("Error parsing channel update event", "error", err)
@@ -301,12 +288,7 @@ func (tc *TwitchWebhookClient) handleChannelUpdate(event json.RawMessage) {
 }
 
 func (tc *TwitchWebhookClient) handleRewardUpdate(event json.RawMessage) {
-	var eventData struct {
-		BroadcasterUserID    string `json:"broadcaster_user_id"`
-		BroadcasterUserLogin string `json:"broadcaster_user_login"`
-		Title                string `json:"title"`
-		Cost                 int    `json:"cost"`
-	}
+	var eventData RewardUpdateEvent
 
 	if err := json.Unmarshal(event, &eventData); err != nil {
 		tc.logger.Error("Error parsing reward update event", "error", err)
