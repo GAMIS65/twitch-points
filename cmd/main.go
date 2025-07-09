@@ -130,15 +130,14 @@ func main() {
 		}
 	}
 
-	server := api.NewServer(
-		host,
-		frontendURL,
-		backendDomainName,
-		oauthConfig,
-		sessionStore,
-		dbStore,
-		twitchWebhookClient,
-	)
+	server := api.NewServer(&api.ServerConfig{
+		Host:          host,
+		FrontendURL:   frontendURL,
+		OAuthConfig:   oauthConfig,
+		SessionStore:  sessionStore,
+		DBStore:       dbStore,
+		TwitchWebhook: twitchWebhookClient,
+	})
 
 	slog.Info("Server listening", "host", host)
 	log.Fatal(server.Start())

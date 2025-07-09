@@ -24,15 +24,30 @@ type Server struct {
 	logger        *slog.Logger
 }
 
-func NewServer(host string, frontendURL string, backendDomainName string, config *oauth2.Config, sessionStore *sessions.CookieStore, dbStore *db.DBStore, twitchWebhook *eventSub.TwitchWebhookClient) *Server {
+type ServerConfig struct {
+	Host          string
+	FrontendURL   string
+	OAuthConfig   *oauth2.Config
+	SessionStore  *sessions.CookieStore
+	DBStore       *db.DBStore
+	TwitchWebhook *eventSub.TwitchWebhookClient
+	Logger        *slog.Logger
+}
+
+func NewServer(cfg *ServerConfig) *Server {
+	logger := cfg.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	return &Server{
-		host:          host,
-		frontendURL:   frontendURL,
-		sessionStore:  sessionStore,
-		oauthConfig:   config,
-		db:            dbStore,
-		twitchWebhook: twitchWebhook,
-		logger:        slog.Default(),
+		host:          cfg.Host,
+		frontendURL:   cfg.FrontendURL,
+		sessionStore:  cfg.SessionStore,
+		oauthConfig:   cfg.OAuthConfig,
+		db:            cfg.DBStore,
+		twitchWebhook: cfg.TwitchWebhook,
+		logger:        logger,
 	}
 }
 
