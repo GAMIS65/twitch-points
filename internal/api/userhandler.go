@@ -1,11 +1,8 @@
 package api
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 
@@ -48,6 +45,7 @@ func (s *Server) getUserData(accessToken string) (*helix.User, error) {
 		ClientID:     s.oauthConfig.ClientID,
 		ClientSecret: s.oauthConfig.ClientSecret,
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Twitch client: %w", err)
 	}
@@ -71,6 +69,11 @@ func (s *Server) getUserData(accessToken string) (*helix.User, error) {
 }
 
 func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
+	client, err := helix.NewClient(&helix.Options{
+		ClientID:     s.oauthConfig.ClientID,
+		ClientSecret: s.oauthConfig.ClientSecret,
+	})
+
 	session, err := s.sessionStore.Get(r, "twitch-oauth-session")
 	if err != nil {
 		slog.Error("Error getting session", "error", err)
@@ -112,7 +115,7 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Existing rewards deleted for user")
 	}
 
-	rewardID, err := createCustomChannelPointReward(s.oauthConfig.ClientID, accessToken, &ChannelCustomRewardsParams{
+	response, err := client.CreateCustomReward(&helix.ChannelCustomRewardsParams{
 		BroadcasterID:                userID,
 		Title:                        "1 Giveaway Entry",
 		Cost:                         100,
@@ -120,6 +123,8 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 		IsMaxPerUserPerStreamEnabled: true,
 		MaxPerUserPerStream:          1,
 	})
+
+	rewardID := response.Data.ChannelCustomRewards[0].ID
 
 	if err != nil {
 		logger.Error("Failed to create a channel point reward", "error", err)
@@ -140,55 +145,4 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("Channel point reward created successfully", "reward_id", rewardID)
 	w.WriteHeader(http.StatusOK)
-}
-
-// TODO: delete this and use the one from the helix library instead. i'm too scared to do it now just in case it breaks something somehow (i'm not a twitch affliate so it's hard to test).
-func createCustomChannelPointReward(clientID string, accessToken string, reward *ChannelCustomRewardsParams) (string, error) {
-	url := fmt.Sprintf("https://api.twitch.tv/helix/channel_points/custom_rewards?broadcaster_id=%s", reward.BroadcasterID)
-
-	payloadBytes, err := json.Marshal(reward)
-	if err != nil {
-		return "", fmt.Errorf("error marshaling JSON payload: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
-	if err != nil {
-		return "", fmt.Errorf("error creating HTTP request: %w", err)
-	}
-
-	req.Header.Set("Client-Id", clientID)
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error sending HTTP request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response body: %w", err)
-	}
-
-	if resp.StatusCode >= http.StatusBadRequest {
-		var twitchError TwitchAPIError
-		if err := json.Unmarshal(bodyBytes, &twitchError); err == nil {
-			return "", fmt.Errorf("twitch api error: status %d, message: %s", twitchError.Status, twitchError.Message)
-		}
-		return "", fmt.Errorf("twitch api error: status %d, body: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	// Decode the successful response to extract the reward ID
-	var successResponse CreateCustomRewardResponse
-	if err := json.Unmarshal(bodyBytes, &successResponse); err != nil {
-		return "", fmt.Errorf("error decoding successful response: %w, body: %s", err, string(bodyBytes))
-	}
-
-	if len(successResponse.Data) > 0 {
-		return successResponse.Data[0].ID, nil
-	}
-
-	return "", fmt.Errorf("successful response did not contain reward data: %s", string(bodyBytes))
 }
