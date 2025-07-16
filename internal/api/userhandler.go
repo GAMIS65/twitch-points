@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gamis65/twitch-points/internal/db"
+	"github.com/gamis65/twitch-points/internal/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/nicklaw5/helix/v2"
@@ -40,6 +41,12 @@ type CreateCustomRewardResponse struct {
 	} `json:"data"`
 }
 
+type MeResponse struct {
+	TwitchID        string `json:"twitch_id"`
+	Username        string `json:"username"`
+	ProfileImageUrl string `json:"profile_image_url"`
+}
+
 func (s *Server) getUserData(accessToken string) (*helix.User, error) {
 	client, err := helix.NewClient(&helix.Options{
 		ClientID:     s.oauthConfig.ClientID,
@@ -68,6 +75,30 @@ func (s *Server) getUserData(accessToken string) (*helix.User, error) {
 	return &resp.Data.Users[0], nil
 }
 
+func (s *Server) meHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := s.sessionStore.Get(r, "twitch-oauth-session")
+	if err != nil {
+		slog.Error("Error getting session", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	accessToken := session.Values["access_token"].(string)
+
+	userData, err := s.getUserData(accessToken)
+	if err != nil {
+		slog.Error("Error getting user data", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+
+	util.SendJSON(w, &MeResponse{
+		TwitchID:        userData.ID,
+		Username:        userData.Login,
+		ProfileImageUrl: userData.ProfileImageURL,
+	})
+
+}
+
 func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 	client, err := helix.NewClient(&helix.Options{
 		ClientID:     s.oauthConfig.ClientID,
@@ -80,6 +111,7 @@ func (s *Server) addRewardHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+
 	userID, ok := session.Values["user_id"].(string)
 	if !ok || userID == "" {
 		slog.Error("User ID not found in session")

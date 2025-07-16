@@ -33,6 +33,7 @@ export default function AddRewardPage() {
       console.log(result);
     } catch (error) {
       alert("Failed to add reward. See console for details.");
+      console.log(error);
     }
   };
 

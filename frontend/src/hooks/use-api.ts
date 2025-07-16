@@ -82,3 +82,14 @@ export function useRecentEntries(options?: SWRConfiguration) {
     }[]
   >("/giveaway/recent-entries", options);
 }
+
+// not ideal but should be fine for now
+export function useUser(options?: SWRConfiguration) {
+  return useApiStatic<
+    {
+      twitch_id: string;
+      username: string;
+      profile_image_url: string;
+    }[]
+  >("/me", { shouldRetryOnError: false, ...options });
+}

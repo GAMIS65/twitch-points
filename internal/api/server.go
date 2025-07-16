@@ -59,6 +59,7 @@ func (s *Server) SetupRoutes() http.Handler {
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	}))
+
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Heartbeat("/health"))
 
@@ -66,6 +67,13 @@ func (s *Server) SetupRoutes() http.Handler {
 	r.Get("/auth/twitch/callback", s.callbackHandler)
 	r.Get("/logout/twitch", s.logoutHandler)
 	r.With(s.authMiddleware).Post("/add-reward", s.addRewardHandler)
+
+	// Protected routes
+	r.Group(func(r chi.Router) {
+		r.Use(s.authMiddleware)
+		r.Post("/add-reward", s.addRewardHandler)
+		r.Get("/me", s.meHandler)
+	})
 
 	r.HandleFunc("/eventsub", s.twitchWebhook.GetHandler())
 

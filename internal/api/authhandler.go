@@ -89,7 +89,7 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 	session.Values["refresh_token"] = token.RefreshToken
 	session.Values["expiry"] = token.Expiry.Unix()
 	session.Values["user_id"] = userData.ID
-	session.Options.MaxAge = int(token.Expiry.Unix() - time.Now().Unix())
+	session.Options.MaxAge = int(7 * 24 * time.Hour)
 
 	existingUser, err := s.db.GetStreamerByID(r.Context(), userData.ID)
 	if err != nil {
@@ -142,11 +142,6 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, _ := s.sessionStore.Get(r, "twitch-oauth-session")
 
-	session.Values["access_token"] = ""
-	session.Values["refresh_token"] = ""
-	session.Values["user_id"] = ""
-	session.Values["state"] = ""
-	session.Values["expiry"] = ""
 	session.Options.MaxAge = -1
 
 	session.Save(r, w)

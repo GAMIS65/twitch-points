@@ -124,6 +124,12 @@ func (tc *TwitchWebhookClient) Initialize() {
 	tc.client.On("channel.update", tc.handleChannelUpdate)
 	tc.client.On("channel.channel_points_custom_reward.update", tc.handleRewardUpdate)
 
+	// Subs and cheers
+	// TODO: Add a giveaway config
+	// tc.client.On("channel.subscribe", tc.handleSubscription)
+	// tc.client.On("channel.subscription.gift")
+	// tc.client.On("channel.cheer")
+
 	streamers, err := tc.db.GetAllStreamersWithTokens(context.Background())
 	if err != nil {
 		tc.logger.Error("Error getting streamers from the database", "error", err)
