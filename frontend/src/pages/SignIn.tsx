@@ -1,20 +1,18 @@
 import { Link } from "react-router";
 import { TwitchIcon, AlertCircle } from "lucide-react";
-import { Button } from "./components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./components/ui/card";
-import { Header } from "./components/dashboard/header";
+} from "@/components/ui/card";
 
 export default function SignInPage() {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
       <main className="flex-1 flex items-center justify-center">
         <div className="container max-w-3xl py-8 mx-auto">
           <Card className="border-2 border-purple-200 dark:border-purple-900">

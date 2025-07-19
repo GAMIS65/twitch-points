@@ -1,95 +1,58 @@
-import { AlertCircle, RefreshCcw, Tv } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui/card";
-import { useStreamersStatic } from "../../hooks/use-api";
-
-import { Button } from "../ui/button";
-import { Skeleton } from "../ui/skeleton";
+} from "@/components/ui/card";
+import { useStreamers } from "@/hooks/use-api";
+import { Users } from "lucide-react";
 
 export function StreamersList() {
-  const { data: streamers, error, isLoading, mutate } = useStreamersStatic();
+  const { data: streamers, error, isLoading } = useStreamers();
 
   return (
-    <Card>
+    <Card className="bg-white/70 backdrop-blur-sm border-purple-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Tv className="h-5 w-5 text-purple-500" />
-          Streamers hosting the giveaway
+        <CardTitle className="flex items-center gap-2 text-purple-800">
+          <Users className="h-5 w-5 text-purple-600" />
+          Host Streamers
         </CardTitle>
-        <CardDescription>
-          Check out these streamers to gain more entries!
+        <CardDescription className="text-purple-600">
+          Streamers hosting this giveaway
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        {isLoading && (
-          <div className="grid gap-4 md:grid-cols-2">
-            {Array(4)
-              .fill(0)
-              .map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 rounded-lg border p-3"
-                >
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
-              ))}
-          </div>
-        )}
 
-        {error && (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mb-3" />
-            <h3 className="text-lg font-semibold mb-1">
-              Failed to load streamers
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              There was an error loading the streamer list.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => mutate()}
-              className="gap-2"
-            >
-              <RefreshCcw className="h-4 w-4" />
-              Try Again
-            </Button>
-          </div>
-        )}
-
+      <CardContent className="p-0">
         {streamers && !isLoading && !error && (
-          <div className="grid gap-4 md:grid-cols-2">
-            {streamers.length > 0 ? (
-              streamers.map((streamer) => (
+          <div className="max-h-96 overflow-y-auto px-6 pb-6">
+            <div className="space-y-4">
+              {streamers.map((streamer) => (
                 <div
                   key={streamer.username}
-                  className="flex items-center gap-3 rounded-lg border p-3"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-colors duration-100 "
                 >
-                  <Avatar className="h-8 w-8 border-2 border-purple-500">
-                    <AvatarImage
-                      src={streamer.profile_image_url}
-                      alt={streamer.username}
-                    />
-                    <AvatarFallback>
-                      {streamer.username.substring(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{streamer.username}</span>
+                  <div className="relative">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage
+                        src={streamer.profile_image_url || "/placeholder.svg"}
+                      />
+                      <AvatarFallback className="bg-purple-200 text-purple-700">
+                        {streamer.username.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-purple-900">
+                      {streamer.username}
+                    </p>
+                  </div>
+                  {/* {streamer.isLive && <Badge className="bg-red-500">LIVE</Badge>} */}
                 </div>
-              ))
-            ) : (
-              <div className="col-span-2 text-center py-6 text-muted-foreground">
-                No streamers are currently hosting the giveaway.
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

@@ -1,7 +1,6 @@
 import { TwitchIcon } from "lucide-react";
-import { Button } from "./components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
-import { Header } from "./components/dashboard/header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AddRewardPage() {
   const baseUrl = import.meta.env.VITE_BACKEND_URL || "";
@@ -39,7 +38,6 @@ export default function AddRewardPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
       <main className="flex-1">
         <div className="container mx-auto max-w-3xl py-8">
           <Card className="text-center">

@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { Roulette, useRoulette } from "react-hook-roulette";
 import Confetti from "react-confetti";
-import { Button } from "./components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
-import { Header } from "./components/dashboard/header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Play, StopCircle } from "lucide-react";
-import { LeaderboardTable } from "./components/dashboard/leaderboard";
-import { useLeaderboard } from "./hooks/use-api";
+import { Leaderboard } from "@/components/dashboard/leaderboard";
+import { useLeaderboard } from "@/hooks/use-api";
 
 export default function WheelPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const { data: leaderboardUsers } = useLeaderboard();
+
   const [items] = useState(
     leaderboardUsers?.map((user) => ({
       name: user.username,
@@ -70,9 +70,8 @@ export default function WheelPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background mt-12">
       <div className="flex flex-col w-full">
-        <Header />
         <main className="flex-1 p-4 md:p-6">
           <div className="flex flex-col gap-4 md:gap-8">
             <div className="grid gap-4 md:grid-cols-2">
@@ -118,7 +117,7 @@ export default function WheelPage() {
 
               {/* Leaderboard Section */}
               <div>
-                <LeaderboardTable />
+                <Leaderboard />
               </div>
             </div>
           </div>
