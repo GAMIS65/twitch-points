@@ -9,9 +9,14 @@ import {
 } from "@/components/ui/card";
 import { useStreamers } from "@/hooks/use-api";
 import { Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export function StreamersList() {
   const { data: streamers, error, isLoading } = useStreamers();
+
+  const sortedStreamers = streamers?.slice().sort((a, b) => {
+    return Number(b.is_live) - Number(a.is_live);
+  });
 
   return (
     <Card className="bg-white/70 backdrop-blur-sm border-purple-200">
@@ -26,10 +31,10 @@ export function StreamersList() {
       </CardHeader>
 
       <CardContent className="p-0">
-        {streamers && !isLoading && !error && (
+        {streamers && sortedStreamers && !isLoading && !error && (
           <div className="max-h-96 overflow-y-auto px-6 pb-6">
             <div className="space-y-4">
-              {streamers.map((streamer) => (
+              {sortedStreamers.map((streamer) => (
                 <div
                   key={streamer.username}
                   className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-colors duration-100 "
@@ -49,7 +54,9 @@ export function StreamersList() {
                       {streamer.username}
                     </p>
                   </div>
-                  {/* {streamer.isLive && <Badge className="bg-red-500">LIVE</Badge>} */}
+                  {streamer.is_live && (
+                    <Badge className="bg-red-500 hover:bg-red-600">LIVE</Badge>
+                  )}
                 </div>
               ))}
             </div>

@@ -108,6 +108,7 @@ func (s *Server) callbackHandler(w http.ResponseWriter, r *http.Request) {
 			RefreshToken:    pgtype.Text{String: token.RefreshToken, Valid: true},
 			ProfileImageUrl: pgtype.Text{String: userData.ProfileImageURL, Valid: true},
 			Verified:        pgtype.Bool{Bool: false, Valid: true},
+			IsLive:          pgtype.Bool{Bool: userData.IsLive, Valid: true},
 		})
 
 		if err != nil {

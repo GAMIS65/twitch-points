@@ -201,6 +201,15 @@ func (tc *TwitchWebhookClient) handleStreamOnline(event json.RawMessage) {
 
 	logger := tc.getEventLogger("stream.online", eventData)
 	logger.Info("Streamer went live")
+
+	err := tc.db.SetStreamerLiveStatus(context.Background(), db.SetStreamerLiveStatusParams{
+		IsLive: pgtype.Bool{Bool: true, Valid: true},
+	})
+
+	if err != nil {
+		logger.Error("Error setting streamer live status", "error", err)
+	}
+
 	util.SendWebHook(eventData.BroadcasterUserLogin + " went live")
 }
 
@@ -214,6 +223,14 @@ func (tc *TwitchWebhookClient) handleStreamOffline(event json.RawMessage) {
 
 	logger := tc.getEventLogger("stream.offline", eventData)
 	logger.Info("Streamer went offline")
+
+	err := tc.db.SetStreamerLiveStatus(context.Background(), db.SetStreamerLiveStatusParams{
+		IsLive: pgtype.Bool{Bool: false, Valid: true},
+	})
+
+	if err != nil {
+		logger.Error("Error setting streamer live status", "error", err)
+	}
 }
 
 func (tc *TwitchWebhookClient) handleRewardRedemption(event json.RawMessage) {

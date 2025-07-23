@@ -30,6 +30,7 @@ type Streamer struct {
 	RefreshToken    pgtype.Text        `json:"refresh_token"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	IsLive          pgtype.Bool        `json:"is_live"`
 }
 
 type Viewer struct {

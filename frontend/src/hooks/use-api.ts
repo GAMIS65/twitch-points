@@ -26,17 +26,18 @@ export function useStreamersStatic(options?: SWRConfiguration) {
       username: string;
       twitch_id: string;
       profile_image_url: string;
+      is_live: string;
     }[]
   >("/giveaway/streamers", options);
 }
 
-// TODO: Add is_live
 export function useStreamers(options?: SWRConfiguration) {
   return useApi<
     {
       username: string;
       twitch_id: string;
       profile_image_url: string;
+      is_live: string;
     }[]
   >("/giveaway/streamers", options);
 }

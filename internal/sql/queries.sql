@@ -1,6 +1,6 @@
 -- name: CreateStreamer :one
-INSERT INTO streamers (twitch_id, username, verified, access_token, refresh_token, profile_image_url)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO streamers (twitch_id, username, verified, access_token, refresh_token, profile_image_url, is_live)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- name: CreateViewer :one
@@ -15,7 +15,7 @@ SELECT * FROM viewers WHERE twitch_id = $1;
 SELECT * FROM streamers WHERE twitch_id = $1;
 
 -- name: GetAllStreamers :many
-SELECT username, twitch_id, profile_image_url FROM streamers WHERE verified = TRUE;
+SELECT username, twitch_id, profile_image_url, is_live FROM streamers WHERE verified = TRUE;
 
 -- name: GetAllStreamersWithTokens :many
 SELECT * FROM streamers;
@@ -80,4 +80,11 @@ FROM redemptions;
 -- name: GetTotalParticipantsCount :one
 SELECT COUNT(*) AS total_participants
 FROM viewers;
+
+
+-- name: SetStreamerLiveStatus :exec
+UPDATE streamers
+SET is_live = $1
+WHERE twitch_id = $2;
+
 

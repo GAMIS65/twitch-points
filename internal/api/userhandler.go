@@ -47,7 +47,12 @@ type MeResponse struct {
 	ProfileImageUrl string `json:"profile_image_url"`
 }
 
-func (s *Server) getUserData(accessToken string) (*helix.User, error) {
+type UserData struct {
+	helix.User
+	IsLive bool `json:"is_live"`
+}
+
+func (s *Server) getUserData(accessToken string) (*UserData, error) {
 	client, err := helix.NewClient(&helix.Options{
 		ClientID:     s.oauthConfig.ClientID,
 		ClientSecret: s.oauthConfig.ClientSecret,
@@ -72,7 +77,19 @@ func (s *Server) getUserData(accessToken string) (*helix.User, error) {
 		return nil, fmt.Errorf("no user information found")
 	}
 
-	return &resp.Data.Users[0], nil
+	stream, err := client.GetStreams(&helix.StreamsParams{
+		UserIDs: []string{resp.Data.Users[0].ID},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(stream.Data.Streams) == 0 {
+		return &UserData{resp.Data.Users[0], false}, nil
+	}
+
+	return &UserData{resp.Data.Users[0], true}, nil
 }
 
 func (s *Server) meHandler(w http.ResponseWriter, r *http.Request) {

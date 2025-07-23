@@ -54,9 +54,9 @@ func (q *Queries) CreateReward(ctx context.Context, arg CreateRewardParams) (Rew
 }
 
 const createStreamer = `-- name: CreateStreamer :one
-INSERT INTO streamers (twitch_id, username, verified, access_token, refresh_token, profile_image_url)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING twitch_id, username, verified, profile_image_url, access_token, refresh_token, created_at, updated_at
+INSERT INTO streamers (twitch_id, username, verified, access_token, refresh_token, profile_image_url, is_live)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING twitch_id, username, verified, profile_image_url, access_token, refresh_token, created_at, updated_at, is_live
 `
 
 type CreateStreamerParams struct {
@@ -66,6 +66,7 @@ type CreateStreamerParams struct {
 	AccessToken     pgtype.Text `json:"access_token"`
 	RefreshToken    pgtype.Text `json:"refresh_token"`
 	ProfileImageUrl pgtype.Text `json:"profile_image_url"`
+	IsLive          pgtype.Bool `json:"is_live"`
 }
 
 func (q *Queries) CreateStreamer(ctx context.Context, arg CreateStreamerParams) (Streamer, error) {
@@ -76,6 +77,7 @@ func (q *Queries) CreateStreamer(ctx context.Context, arg CreateStreamerParams) 
 		arg.AccessToken,
 		arg.RefreshToken,
 		arg.ProfileImageUrl,
+		arg.IsLive,
 	)
 	var i Streamer
 	err := row.Scan(
@@ -87,6 +89,7 @@ func (q *Queries) CreateStreamer(ctx context.Context, arg CreateStreamerParams) 
 		&i.RefreshToken,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsLive,
 	)
 	return i, err
 }
@@ -127,13 +130,14 @@ func (q *Queries) DeleteRewardsByStreamerID(ctx context.Context, streamerID pgty
 }
 
 const getAllStreamers = `-- name: GetAllStreamers :many
-SELECT username, twitch_id, profile_image_url FROM streamers WHERE verified = TRUE
+SELECT username, twitch_id, profile_image_url, is_live FROM streamers WHERE verified = TRUE
 `
 
 type GetAllStreamersRow struct {
 	Username        string      `json:"username"`
 	TwitchID        string      `json:"twitch_id"`
 	ProfileImageUrl pgtype.Text `json:"profile_image_url"`
+	IsLive          pgtype.Bool `json:"is_live"`
 }
 
 func (q *Queries) GetAllStreamers(ctx context.Context) ([]GetAllStreamersRow, error) {
@@ -145,7 +149,12 @@ func (q *Queries) GetAllStreamers(ctx context.Context) ([]GetAllStreamersRow, er
 	var items []GetAllStreamersRow
 	for rows.Next() {
 		var i GetAllStreamersRow
-		if err := rows.Scan(&i.Username, &i.TwitchID, &i.ProfileImageUrl); err != nil {
+		if err := rows.Scan(
+			&i.Username,
+			&i.TwitchID,
+			&i.ProfileImageUrl,
+			&i.IsLive,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -157,7 +166,7 @@ func (q *Queries) GetAllStreamers(ctx context.Context) ([]GetAllStreamersRow, er
 }
 
 const getAllStreamersWithTokens = `-- name: GetAllStreamersWithTokens :many
-SELECT twitch_id, username, verified, profile_image_url, access_token, refresh_token, created_at, updated_at FROM streamers
+SELECT twitch_id, username, verified, profile_image_url, access_token, refresh_token, created_at, updated_at, is_live FROM streamers
 `
 
 func (q *Queries) GetAllStreamersWithTokens(ctx context.Context) ([]Streamer, error) {
@@ -178,6 +187,7 @@ func (q *Queries) GetAllStreamersWithTokens(ctx context.Context) ([]Streamer, er
 			&i.RefreshToken,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsLive,
 		); err != nil {
 			return nil, err
 		}
@@ -263,7 +273,7 @@ func (q *Queries) GetRewardsByStreamer(ctx context.Context, streamerID pgtype.Te
 }
 
 const getStreamerByID = `-- name: GetStreamerByID :one
-SELECT twitch_id, username, verified, profile_image_url, access_token, refresh_token, created_at, updated_at FROM streamers WHERE twitch_id = $1
+SELECT twitch_id, username, verified, profile_image_url, access_token, refresh_token, created_at, updated_at, is_live FROM streamers WHERE twitch_id = $1
 `
 
 func (q *Queries) GetStreamerByID(ctx context.Context, twitchID string) (Streamer, error) {
@@ -278,6 +288,7 @@ func (q *Queries) GetStreamerByID(ctx context.Context, twitchID string) (Streame
 		&i.RefreshToken,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsLive,
 	)
 	return i, err
 }
@@ -362,12 +373,28 @@ func (q *Queries) GetViewerLeaderboard(ctx context.Context) ([]GetViewerLeaderbo
 	return items, nil
 }
 
+const setStreamerLiveStatus = `-- name: SetStreamerLiveStatus :exec
+UPDATE streamers
+SET is_live = $1
+WHERE twitch_id = $2
+`
+
+type SetStreamerLiveStatusParams struct {
+	IsLive   pgtype.Bool `json:"is_live"`
+	TwitchID string      `json:"twitch_id"`
+}
+
+func (q *Queries) SetStreamerLiveStatus(ctx context.Context, arg SetStreamerLiveStatusParams) error {
+	_, err := q.db.Exec(ctx, setStreamerLiveStatus, arg.IsLive, arg.TwitchID)
+	return err
+}
+
 const updateStreamerTokens = `-- name: UpdateStreamerTokens :one
 UPDATE streamers 
 SET access_token = $2, 
     refresh_token = $3
 WHERE twitch_id = $1
-RETURNING twitch_id, username, verified, profile_image_url, access_token, refresh_token, created_at, updated_at
+RETURNING twitch_id, username, verified, profile_image_url, access_token, refresh_token, created_at, updated_at, is_live
 `
 
 type UpdateStreamerTokensParams struct {
@@ -388,6 +415,7 @@ func (q *Queries) UpdateStreamerTokens(ctx context.Context, arg UpdateStreamerTo
 		&i.RefreshToken,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsLive,
 	)
 	return i, err
 }
