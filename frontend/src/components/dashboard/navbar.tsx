@@ -29,7 +29,7 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="fixed top-8 flex items-center justify-center p-2 bg-white/20 backdrop-blur-lg rounded-full shadow-lg border border-white/30 z-10">
+    <nav className="fixed top-8 flex items-center justify-center p-2 bg-white/20 backdrop-blur-lg rounded-sm shadow-lg border border-white/30 z-10">
       <ul className="flex items-center gap-2">
         {navItems.map((item) => (
           <NavItem
@@ -53,11 +53,11 @@ function NavItem({ children, isActive, path }: NavItemProps) {
     <li
       onClick={() => navigate(path)}
       className={`
-        flex items-center justify-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all duration-100 ease-in-out
+        flex items-center justify-center gap-2 px-4 py-2 rounded-sm cursor-pointer transition-all duration-100 ease-in-out
         ${
           isActive
-            ? "bg-white text-purple-600 font-semibold shadow-md"
-            : "text-gray-700 hover:shadow-md hover:bg-gray-200/30"
+            ? "text-purple-600 font-semibold bg-gray-200/30"
+            : "text-gray-700 hover:bg-gray-200/30"
         }
       `}
     >
