@@ -29,7 +29,7 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="fixed top-8 flex items-center justify-center p-2 bg-white/20 backdrop-blur-lg rounded-sm shadow-lg border border-white/30 z-10">
+    <nav className="fixed top-8 flex items-center justify-center p-2 bg-white/20 backdrop-blur-lg rounded-sm shadow-sm border border-white/30 z-10">
       <ul className="flex items-center gap-2">
         {navItems.map((item) => (
           <NavItem
